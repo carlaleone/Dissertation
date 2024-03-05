@@ -24,8 +24,70 @@ richness <- meta_richness %>%
   ))
 
 View(richness)
+richness$habitat<- as.factor(richness$habitat)
+
+## Data frame with richness per site
+richness <- richness %>%
+  mutate(max_richness = case_when(
+    site %in% c("port_dinallaen") ~ "12",
+    site %in% c("gallanach_bay") ~ "9",
+    site %in% c("ardmore") ~ "15",
+    site %in% c("craignish") ~ "12",
+    site %in% c("skye") ~ "13",
+    site %in% c("kintyre") ~ "9",
+    site %in% c("gansey_bay") ~ "8",
+    site %in% c("kyles_of_bute") ~ "12",
+    site %in% c("isle_of_soay") ~ "13",
+    site %in% c("canna") ~ "12",
+    TRUE ~ NA_character_  # In case there are unmatched sites
+  ))
+richness$max_richness<- as.numeric(richness$max_richness)
 
 ## Richness vs Habitat ----
+boxplot(richness$max_richness~richness$habitat)
+boxplot(richness$richness~richness$site)
+
+
+
+### Assumptions for ANOVA
+plot
+
 
 ## NMDS ----
-### Make separate 
+sound_nmds <- read_excel("data/meta_richness.xlsx", 
+                            sheet = "Sheet2")
+View(sound_nmds)
+### Delete unnecessary columns
+presence_nmds<- subset(sound_nmds, select = -c(boat, water, avg_richness,max_richnes, sample_richness,high,low, high_low, samples) )
+presence_nmds[, -1] <- sapply(presence_nmds[, -1], function(x) as.numeric(as.character(x)))
+class(presence_nmds$grunt)
+presence_nmds<- presence_nmds %>%
+  column_to_rownames(var = "site")
+View(presence_nmds)
+### Make separate for habitats
+habitats <- read_excel("data/meta_richness.xlsx", 
+                         sheet = "nmds_categories")
+View(habitats)
+habitats$habitat<- as.factor(habitats$habitat)
+
+### Distance matrix calculation
+sound_dist<- vegdist(presence_nmds, method="bray", binary= TRUE)
+sound_dist
+
+### NMDS
+fishes_nmds<- metaMDS(presence_nmds, #the community data
+                    distance = "bray", # Using bray-curtis distance
+                    try = 100)
+### Plots
+ordihull(fishes_nmds, # the nmds we created
+         groups= habitats$habitat, #calling the groups from the mpa data frame we made
+         draw = "polygon", # drawing polygons
+         col = 1:3, # shading the plygons
+         label = FALSE #removing labels from the plygons
+) 
+
+### SIMPER
+habitat_simper<- simper(presence_nmds, 
+                         habitats$habitat,
+                         permutations = 999)
+summary(habitat_simper)
