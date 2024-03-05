@@ -21,7 +21,7 @@ richness <- meta_richness %>%
     site %in% c("craignish", "skye", "kintyre") ~ "2",
     site %in% c("gansey_bay", "kyles_of_bute", "isle_of_soay", "canna") ~ "3",
     TRUE ~ NA_character_  # In case there are unmatched sites
-  ))
+  )) #match sites to habitat
 
 View(richness)
 richness$habitat<- as.factor(richness$habitat)
@@ -40,7 +40,7 @@ richness <- richness %>%
     site %in% c("isle_of_soay") ~ "13",
     site %in% c("canna") ~ "12",
     TRUE ~ NA_character_  # In case there are unmatched sites
-  ))
+  )) #match sites to total richness
 richness$max_richness<- as.numeric(richness$max_richness)
 
 ## Richness vs Habitat ----
@@ -53,17 +53,20 @@ boxplot(richness$richness~richness$site)
 plot
 
 
-## NMDS ----
+## NMDS Total Richness----
 sound_nmds <- read_excel("data/meta_richness.xlsx", 
                             sheet = "Sheet2")
 View(sound_nmds)
 ### Delete unnecessary columns
-presence_nmds<- subset(sound_nmds, select = -c(boat, water, avg_richness,max_richnes, sample_richness,high,low, high_low, samples) )
-presence_nmds[, -1] <- sapply(presence_nmds[, -1], function(x) as.numeric(as.character(x)))
+presence_nmds<- subset(sound_nmds, select = -c(boat, water, avg_richness,max_richnes, sample_richness,high,low, high_low, samples) ) #remove unnecessary columns
+presence_nmds[, -1] <- sapply(presence_nmds[, -1], function(x) as.numeric(as.character(x))) #make all values numeric
 class(presence_nmds$grunt)
+
 presence_nmds<- presence_nmds %>%
-  column_to_rownames(var = "site")
+  column_to_rownames(var = "site") # make site the name of the rows
+
 View(presence_nmds)
+
 ### Make separate for habitats
 habitats <- read_excel("data/meta_richness.xlsx", 
                          sheet = "nmds_categories")
