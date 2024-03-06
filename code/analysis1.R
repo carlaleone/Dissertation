@@ -26,6 +26,7 @@ richness <- meta_richness %>%
 View(richness)
 richness$habitat<- as.factor(richness$habitat)
 
+
 ## Data frame with richness per site
 richness <- richness %>%
   mutate(max_richness = case_when(
@@ -47,7 +48,14 @@ richness$max_richness<- as.numeric(richness$max_richness)
 boxplot(richness$max_richness~richness$habitat)
 boxplot(richness$richness~richness$site)
 
+### Subset for anova
 
+
+aov_max_richness<- aov(max_richness~habitat, data=richness)
+summary(aov_max_richness)
+
+### Assumptions
+help(aov)
 
 ### Assumptions for ANOVA
 plot
@@ -81,6 +89,7 @@ sound_dist
 fishes_nmds<- metaMDS(presence_nmds, #the community data
                     distance = "bray", # Using bray-curtis distance
                     try = 100)
+help(metaMDS)
 ### Plots
 ordihull(fishes_nmds, # the nmds we created
          groups= habitats$habitat, #calling the groups from the mpa data frame we made
@@ -90,7 +99,64 @@ ordihull(fishes_nmds, # the nmds we created
 ) 
 
 ### SIMPER
+basic_simper<- simper(presence_nmds, #our community data set
+                      permutations = 999) # permutations to run
+
+summary(basic_simper , ordered = TRUE) #summary is the total contrast.
+
 habitat_simper<- simper(presence_nmds, 
                          habitats$habitat,
                          permutations = 999)
 summary(habitat_simper)
+
+## Richness vs time ----
+class(meta_richness$time)
+View(meta_richness)
+View(richness)
+richness$richness<- as.numeric(richness$richness)
+
+#Compute average richness for each time point and habitat category
+df_avg <- richness %>%
+  group_by(time,habitat) %>%
+  summarise(avg_richness = mean(max_richnes),
+            sd_richness = sd(max_richnes),
+            se_richness = sd(max_richnes) /sqrt(n()))%>%
+              ungroup()
+#gives the stats for each habitat at each time point. Has taken the average richness of each habitat for each time.
+
+### Group by site
+df_avg_site<- richness %>%
+  group_by(time,site) %>%
+  summarise(avg_richness = mean(richness),
+            sd_richness = sd(richness),
+            se_richness = sd(richness) /sqrt(n()))%>%
+  ungroup()
+
+View(df_avg)
+
+### Plot by habitat
+ggplot(df_avg, aes(x = time, y = avg_richness, color = habitat)) +
+  geom_line() +  # Add lines
+  geom_point() +  # Add points
+  labs(x = "Time", y = "Average Richness", color = "Habitat Category") +  # Labels
+  theme_minimal()  # Optional: change theme if desired
+
+### plot by site
+ggplot(df_avg_site, aes(x = time, y = avg_richness, color = site)) +
+  geom_line() +  # Add lines
+  geom_point() +  # Add points
+  labs(x = "Time", y = "Average Richness", color = "Habitat Category") +  # Labels
+  theme_minimal()  # Optional: change theme if desired
+
+
+### Using the full dataset richness to plot and adding error bars
+ggplot(richness, aes(x = time, y = richness, color = habitat)) +
+  stat_summary(fun.data = mean_se, geom = "line") +  # Add lines with mean and standard error
+  stat_summary(fun.data = mean_se, geom = "point") +  # Add points with mean and standard error
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.1) +  # Add error bars with standard error
+  labs(x = "Time", y = "Richness", color = "Habitat Category") +  # Labels
+  theme_minimal()
+
+## Boat Presence ----
+
+
