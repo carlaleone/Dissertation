@@ -61,11 +61,12 @@ plot
 
 ## NMDS Total Richness----
 sound_nmds <- read_excel("data/meta_richness.xlsx", 
-                            sheet = "Sheet2")
+                                       sheet = "RICHNESS")
 View(sound_nmds)
 ### Delete unnecessary columns
-presence_nmds<- subset(sound_nmds, select = -c(boat, water, avg_richness,max_richnes, sample_richness,high,low, high_low, samples) ) #remove unnecessary columns
-presence_nmds[, -1] <- sapply(presence_nmds[, -1], function(x) as.numeric(as.character(x))) #make all values numeric
+presence_nmds<- subset(sound_nmds, select = -c(cetacean,boat, water, avg_richness,max_richnes, sample_richness,high,low, high_low, samples) ) #remove unnecessary columns
+
+ #make all values numeric
 class(presence_nmds$grunt)
 
 presence_nmds<- presence_nmds %>%
@@ -87,6 +88,7 @@ sound_dist
 fishes_nmds<- metaMDS(presence_nmds, #the community data
                     distance = "bray", # Using bray-curtis distance
                     try = 100)
+summary(fishes_nmds)
 help(metaMDS)
 ### Plots
 ordihull(fishes_nmds, # the nmds we created
@@ -112,27 +114,93 @@ summary(habitat_simper)
 library(readxl)
 activity <- read_excel("data/meta_richness.xlsx", 
                             sheet = "activity")
+activity <- activity %>%
+  mutate(habitat = case_when(
+    site %in% c("port_dinallaen", "ardmore", "gallanach_bay") ~ "1",
+    site %in% c("craignish", "skye", "kintyre") ~ "2",
+    site %in% c("gansey_bay", "kyles_of_bute", "isle_of_soay", "canna") ~ "3",
+    TRUE ~ NA_character_  # In case there are unmatched sites
+  ))
 View(activity)
 
 # make the sites the row names
 activity_nmds<- activity %>%
 column_to_rownames(var = "site")  %>%
   select(-water, -boat, -cetacean)
+activity_nmds <- sapply(activity_nmds, as.numeric)
+str(activity_nmds)
 View(activity_nmds)
 
+
+
+# calculating distances
+distances<- vegdist(numeric_data, method="bray")
+distances
+
 # make the nmds
-activity_fish_nmds<- metaMDS(activity_nmds, #the community data
+nmds<- metaMDS(activity_nmds, #the community data
                       distance = "bray", # Using bray-curtis distance
                       try = 100)
+activity_fish_nmds
 
-
+# plot the nmds
 ordihull(activity_fish_nmds, # the nmds we created
          groups= habitats$habitat, #calling the groups from the mpa data frame we made
          draw = "polygon", # drawing polygons
          col = 1:3, # shading the plygons
-         label = FALSE #removing labels from the plygons
+         label = F #removing labels from the plygons
 )
+
+# SIMPER 
+basic_simper_activity<- simper(nmds, #our community data set
+                      permutations = 999) # permutations to run
+
+summary(basic_simper , ordered = TRUE) #summary is the total contrast.
+
+habitat_simper<- simper(presence_nmds, 
+                        habitats$habitat,
+                        permutations = 999)
+summary(habitat_simper)
+
 ## NMDS Relative Abundance ----
+# import the dataset
+abundances <- read_excel("data/meta_richness.xlsx", 
+                            sheet = "relative_abundance")
+abundances<- subset(abundances, select = -c(boat, water, avg_richness,max_richnes, sample_richness,high,low, high_low, samples) ) #remove unnecessary columns
+abundances<- abundances %>%
+  column_to_rownames(var = "site")
+abundances <- sapply(abundances, as.numeric)
+View(abundances)
+
+# Make the nmds
+abundance_nmds<- metaMDS(abundances, #the community data
+           distance = "bray",autotransform =FALSE, # Using bray-curtis distance
+           try = 100)
+any(!is.numeric(abundances))
+any(!is.infinite(abundances))
+infinite_values <- is.infinite(abundances)
+infinite_values
+abundances[infinite_values] <- 0 
+
+### Plots
+ordihull(abundance_nmds, # the nmds we created
+         groups= habitats$habitat, #calling the groups from the mpa data frame we made
+         draw = "polygon", # drawing polygons
+         col = 1:3, # shading the plygons
+         label = FALSE #removing labels from the plygons
+) 
+
+### SIMPER
+basic_simper<- simper(abundance_nmds, #our community data set
+                      permutations = 999) # permutations to run
+
+summary(basic_simper , ordered = TRUE) #summary is the total contrast.
+
+habitat_simper<- simper(presence_nmds, 
+                        habitats$habitat,
+                        permutations = 999)
+summary(habitat_simper)
+
 
 ## Richness vs time ----
 class(meta_richness$time)
