@@ -50,7 +50,6 @@ boxplot(richness$richness~richness$site)
 
 ### Subset for anova
 
-
 aov_max_richness<- aov(max_richness~habitat, data=richness)
 summary(aov_max_richness)
 
@@ -156,6 +155,13 @@ ggplot(richness, aes(x = time, y = richness, color = habitat)) +
   stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.1) +  # Add error bars with standard error
   labs(x = "Time", y = "Richness", color = "Habitat Category") +  # Labels
   theme_minimal()
+
+## Relative abundance of the sounds ----
+### calculate the relative abundance = 
+
+## Rarefaction for richness ----
+help(rrarefy)
+View(BCI)
 
 ## Boat Presence ----
 
