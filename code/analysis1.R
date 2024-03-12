@@ -117,8 +117,21 @@ View(activity)
 # make the sites the row names
 activity_nmds<- activity %>%
 column_to_rownames(var = "site")  %>%
-  select(-water, -boat)
+  select(-water, -boat, -cetacean)
+View(activity_nmds)
 
+# make the nmds
+activity_fish_nmds<- metaMDS(activity_nmds, #the community data
+                      distance = "bray", # Using bray-curtis distance
+                      try = 100)
+
+
+ordihull(activity_fish_nmds, # the nmds we created
+         groups= habitats$habitat, #calling the groups from the mpa data frame we made
+         draw = "polygon", # drawing polygons
+         col = 1:3, # shading the plygons
+         label = FALSE #removing labels from the plygons
+)
 ## NMDS Relative Abundance ----
 
 ## Richness vs time ----
