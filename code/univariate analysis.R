@@ -13,7 +13,17 @@ meta_richness <- read_excel("data/meta_richness.xlsx",
                             sheet = "big_sheet (2)")
 View(meta_richness)
 
-## Add column for habitat ---
+## Specpool to calculate richness----
+View(richness)
+colnames(richness)
+richness_specpool<-  subset(richness, select = -c(recording,time, minute,boat, water, richness,max_richnes,max_richness, samples,invert,fish, ...33,invert_dominance, samples, habitat) )
+View(richness_specpool)
+richness_specpool<- richness_specpool %>%
+  column_to_rownames(var = "site")
+richness_specpool <- sapply(richness_specpool, as.numeric)
+specpool(richness_specpool, site, smallsample=TRUE)
+
+## Add column for habitat ----
 richness <- richness %>%
   mutate(habitat = case_when(
     site %in% c("port_dinallaen", "ardmore", "gallanach_bay") ~ "1",
