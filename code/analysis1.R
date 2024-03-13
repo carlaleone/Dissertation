@@ -46,19 +46,18 @@ richness$max_richness<- as.numeric(richness$max_richness)
 
 
 ## NMDS Total Richness----
-sound_nmds <- read_excel("data/meta_richness.xlsx", 
+max_richness <- read_excel("data/meta_richness.xlsx", 
                                        sheet = "RICHNESS")
-View(sound_nmds)
+View(max_richness)
+
 ### Delete unnecessary columns
-presence_nmds<- subset(sound_nmds, select = -c(cetacean,boat, water, avg_richness,max_richnes, sample_richness,high,low, high_low, samples) ) #remove unnecessary columns
+max_richness<- subset(max_richness, select = -c(cetacean,boat, water, avg_richness,max_richnes, sample_richness,high,low, high_low, samples) ) #remove unnecessary columnsc
+class(max_richness)
+str(max_richness)
 
- #make all values numeric
-class(presence_nmds$grunt)
-
-presence_nmds<- presence_nmds %>%
+max_richness<- max_richness %>%
   column_to_rownames(var = "site") # make site the name of the rows
 
-View(presence_nmds)
 
 ### Make separate for habitats
 habitats <- read_excel("data/meta_richness.xlsx", 
@@ -71,13 +70,12 @@ sound_dist<- vegdist(presence_nmds, method="bray", binary= TRUE)
 sound_dist
 
 ### NMDS
-fishes_nmds<- metaMDS(presence_nmds, #the community data
+richness_nmds<- metaMDS(max_richness, #the community data
                     distance = "bray", # Using bray-curtis distance
                     try = 100)
-summary(fishes_nmds)
-help(metaMDS)
+
 ### Plots
-ordihull(fishes_nmds, # the nmds we created
+ordihull(max_richness, # the nmds we created
          groups= habitats$habitat, #calling the groups from the mpa data frame we made
          draw = "polygon", # drawing polygons
          col = 1:3, # shading the plygons
@@ -85,7 +83,7 @@ ordihull(fishes_nmds, # the nmds we created
 ) 
 
 ### SIMPER
-basic_simper<- simper(presence_nmds, #our community data set
+basic_simper<- simper(richness_nmds, #our community data set
                       permutations = 999) # permutations to run
 
 summary(basic_simper , ordered = TRUE) #summary is the total contrast.
@@ -153,20 +151,25 @@ summary(habitat_simper)
 abundances <- read_excel("data/meta_richness.xlsx", 
                             sheet = "relative_abundance")
 abundances<- subset(abundances, select = -c(boat, water, avg_richness,max_richnes, sample_richness,high,low, high_low, samples) ) #remove unnecessary columns
+View(abundances)
+str(abundances)
+abundances$site<- as.character(abundances$site)
 abundances<- abundances %>%
   column_to_rownames(var = "site")
-abundances <- sapply(abundances, as.numeric)
-View(abundances)
-
+class(abundances)
+is.data.frame(abundances) #data frame
+abundances <- abundances[complete.cases(abundances), ]
+is.na.data.frame(abundances)
+abundances <- round(abundances, 3)
 # Make the nmds
 abundance_nmds<- metaMDS(abundances, #the community data
            distance = "bray",autotransform =FALSE, # Using bray-curtis distance
            try = 100)
-any(!is.numeric(abundances))
-any(!is.infinite(abundances))
-infinite_values <- is.infinite(abundances)
-infinite_values
-abundances[infinite_values] <- 0 
+abundance_nmds
+
+abundance_simper<- simper(abundance_nmds, #our community data set
+                          permutations = 999) # permutations to run
+## keep getting error saying that it is not numeric
 
 ### Plots
 ordihull(abundance_nmds, # the nmds we created
