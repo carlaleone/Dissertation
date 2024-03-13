@@ -13,7 +13,7 @@ meta_richness <- read_excel("data/meta_richness.xlsx",
                             sheet = "big_sheet (2)")
 View(meta_richness)
 
-## Add column for habitat ---
+## Add column for habitat ----
 richness <- meta_richness %>%
   mutate(habitat = case_when(
     site %in% c("port_dinallaen", "ardmore", "gallanach_bay") ~ "1",
