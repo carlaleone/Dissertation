@@ -81,3 +81,55 @@ help(aov)
 
 ### Assumptions for ANOVA
 plot
+
+
+## New Code ----
+univariate <- read_excel("data/meta_richness.xlsx", 
+                            sheet = "diversity")
+univariate<-  subset(univariate, select = -c(cetacean) )
+
+View(univariate)
+univariate$habitat<- as.factor(univariate$habitat)
+
+## High to low frequency ratio vs habitat ----
+boxplot(univariate$high_low~univariate$habitat)
+kruskal_high_low<-kruskal.test(high_low~habitat, data=univariate)
+kruskal_high_low
+
+## High to low frequency ratio over time ----
+ratios <- read_excel("data/meta_richness.xlsx", 
+                            sheet = "big_sheet (2)")
+
+ratios<-  subset(ratios, select = -c(samples,...33) )
+# add the habitat types
+ratios <- ratios %>%
+  mutate(habitat = case_when(
+    site %in% c("port_dinallaen", "ardmore", "gallanach_bay") ~ "1",
+    site %in% c("craignish", "skye", "kintyre") ~ "2",
+    site %in% c("gansey_bay", "kyles_of_bute", "isle_of_soay", "canna") ~ "3",
+    TRUE ~ NA_character_  # In case there are unmatched sites
+  )) #match sites to habitat
+
+View(ratios)
+
+#plot the ratio over time for each habitat
+df_avg_ratios <- ratios %>%
+  group_by(time,habitat) %>%
+  summarise(avg_ratio = mean(invert_dominance),
+            sd_ratio = sd(invert_dominance),
+            se_ratio = sd(invert_dominance) /sqrt(n()))%>%
+  ungroup()#gives the stats for each habitat at each time point. Has taken the average richness of each habitat for each time.
+
+
+View(df_avg_ratios)
+df_avg_ratios[is.na(df_avg_ratios)] <- 0
+
+### Plot by habitat
+ggplot(df_avg_ratios, aes(x = time, y = avg_ratio, color = habitat)) +
+  geom_line() +  # Add lines
+  geom_point() +  # Add points
+  labs(x = "Time", y = "Average Richness", color = "Habitat Category") +  # Labels
+  theme_minimal()  # Optional: change theme if desired
+### Try a model
+lm_ratios<- lm(invert_dominance~time + habitat, data = ratios)
+summary(lm_ratios)
