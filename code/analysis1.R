@@ -83,12 +83,12 @@ ordihull(max_richness, # the nmds we created
 ) 
 
 ### SIMPER
-basic_simper<- simper(richness_nmds, #our community data set
+basic_simper<- simper(max_richness, #our community data set
                       permutations = 999) # permutations to run
 
 summary(basic_simper , ordered = TRUE) #summary is the total contrast.
 
-habitat_simper<- simper(presence_nmds, 
+habitat_simper<- simper(max_richness, 
                          habitats$habitat,
                          permutations = 999)
 summary(habitat_simper)
@@ -123,9 +123,10 @@ distances
 
 # make the nmds
 nmds<- metaMDS(activity_nmds, #the community data
-                      distance = "bray", # Using bray-curtis distance
-                      try = 100)
-activity_fish_nmds
+                      distance = "bray",
+               k=2,# Using bray-curtis distance
+                      try = 300)
+
 
 # plot the nmds
 ordihull(activity_fish_nmds, # the nmds we created
@@ -136,21 +137,23 @@ ordihull(activity_fish_nmds, # the nmds we created
 )
 
 # SIMPER 
-basic_simper_activity<- simper(nmds, #our community data set
+basic_simper_activity<- simper(activity_nmds, #our community data set
                       permutations = 999) # permutations to run
 
 summary(basic_simper , ordered = TRUE) #summary is the total contrast.
 
-habitat_simper<- simper(presence_nmds, 
+habitat_simper<- simper(activity_nmds, 
                         habitats$habitat,
                         permutations = 999)
 summary(habitat_simper)
+stressplot(nmds)
+ordiplot(nmds, type= "text")
 
 ## NMDS Relative Abundance ----
 # import the dataset
 abundances <- read_excel("data/meta_richness.xlsx", 
                             sheet = "relative_abundance")
-abundances<- subset(abundances, select = -c(boat, water, avg_richness,max_richnes, sample_richness,high,low, high_low, samples) ) #remove unnecessary columns
+abundances<- subset(abundances, select = -c(cetacean,boat, water, avg_richness,max_richnes, sample_richness,high,low, high_low, samples) ) #remove unnecessary columns
 View(abundances)
 str(abundances)
 abundances$site<- as.character(abundances$site)
@@ -163,16 +166,18 @@ is.na.data.frame(abundances)
 abundances <- round(abundances, 3)
 # Make the nmds
 abundance_nmds<- metaMDS(abundances, #the community data
-           distance = "bray",autotransform =FALSE, # Using bray-curtis distance
-           try = 100)
+           distance = "bray",k=2, # Using bray-curtis distance
+           try = 300)
 abundance_nmds
 
-abundance_simper<- simper(abundance_nmds, #our community data set
+abundance_simper_habitat<- simper(abundances,
+                                  habitats$habitat,#our community data set
                           permutations = 999) # permutations to run
+summary(abundance_simper_habitat)
 ## keep getting error saying that it is not numeric
 
 ### Plots
-ordihull(abundance_nmds, # the nmds we created
+plot<- ordihull(abundance_nmds, # the nmds we created
          groups= habitats$habitat, #calling the groups from the mpa data frame we made
          draw = "polygon", # drawing polygons
          col = 1:3, # shading the plygons
