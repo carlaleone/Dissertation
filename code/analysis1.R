@@ -1,4 +1,4 @@
-# Dissertation Richness Script
+# Dissertation NMDS Analysis
 # Carla Leone
 # 5th March, 2024
 
@@ -43,20 +43,6 @@ richness <- richness %>%
   )) #match sites to total richness
 richness$max_richness<- as.numeric(richness$max_richness)
 
-## Richness vs Habitat ----
-boxplot(richness$max_richness~richness$habitat)
-boxplot(richness$richness~richness$site)
-
-### Subset for anova
-
-aov_max_richness<- aov(max_richness~habitat, data=richness)
-summary(aov_max_richness)
-
-### Assumptions
-help(aov)
-
-### Assumptions for ANOVA
-plot
 
 
 ## NMDS Total Richness----
