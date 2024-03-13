@@ -129,13 +129,13 @@ nmds<- metaMDS(activity_nmds, #the community data
 
 
 # plot the nmds
-ordihull(activity_fish_nmds, # the nmds we created
+ordihull(nmds, # the nmds we created
          groups= habitats$habitat, #calling the groups from the mpa data frame we made
          draw = "polygon", # drawing polygons
          col = 1:3, # shading the plygons
          label = F #removing labels from the plygons
 )
-
+plot
 # SIMPER 
 basic_simper_activity<- simper(activity_nmds, #our community data set
                       permutations = 999) # permutations to run
@@ -145,9 +145,14 @@ summary(basic_simper , ordered = TRUE) #summary is the total contrast.
 habitat_simper<- simper(activity_nmds, 
                         habitats$habitat,
                         permutations = 999)
-summary(habitat_simper)
+summary(habitat_simper, ordered = T)
 stressplot(nmds)
 ordiplot(nmds, type= "text")
+
+data.scores <- as.data.frame(scores(nmds))  #Using the scores function from vegan to extract the site scores and convert to a data.frame
+data.scores$site <- rownames(data.scores)  # create a column of site names, from the rownames of data.scores
+data.scores$grp <- grp  #  add the grp variable created earlier
+head(data.scores) 
 
 ## NMDS Relative Abundance ----
 # import the dataset

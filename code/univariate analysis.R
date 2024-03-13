@@ -130,6 +130,7 @@ ggplot(df_avg_ratios, aes(x = time, y = avg_ratio, color = habitat)) +
   geom_point() +  # Add points
   labs(x = "Time", y = "Average Richness", color = "Habitat Category") +  # Labels
   theme_minimal()  # Optional: change theme if desired
-### Try a model
+
+### Try a model----
 lm_ratios<- lm(invert_dominance~time + habitat, data = ratios)
 summary(lm_ratios)
