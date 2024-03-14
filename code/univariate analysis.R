@@ -96,6 +96,18 @@ boxplot(univariate$high_low~univariate$habitat)
 kruskal_high_low<-kruskal.test(high_low~habitat, data=univariate)
 kruskal_high_low
 
+## Diversity models ----
+diversity <- read_excel("data/meta_richness.xlsx", 
+                            sheet = "diversity")
+View(diversity)
+boxplot(diversity$simpson~diversity$habitat)
+boxplot(diversity$avg_richness~diversity$habitat)
+
+kw_avg_richness<- kruskal.test(avg_richness~habitat, data=diversity)
+summary(aov_avg_richness)
+kw_avg_richness
+#not significant
+
 ## High to low frequency ratio over time ----
 ratios <- read_excel("data/meta_richness.xlsx", 
                             sheet = "big_sheet (2)")

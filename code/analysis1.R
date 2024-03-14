@@ -108,51 +108,85 @@ activity <- activity %>%
 View(activity)
 
 # make the sites the row names
-activity_nmds<- activity %>%
-column_to_rownames(var = "site")  %>%
-  select(-water, -boat, -cetacean)
-activity_nmds <- sapply(activity_nmds, as.numeric)
-str(activity_nmds)
-View(activity_nmds)
+activity<- activity %>%
+column_to_rownames(var = "site")
 
-
+activity<- activity %>% 
+select(-water, -boat, -cetacean)
+View(activity)
 
 # calculating distances
-distances<- vegdist(numeric_data, method="bray")
+distances<- vegdist(activity, method="bray")
 distances
 
 # make the nmds
-nmds<- metaMDS(activity_nmds, #the community data
+activity_nmds<- metaMDS(activity, #the community data
                       distance = "bray",
                k=2,# Using bray-curtis distance
                       try = 300)
 
+habitats <- read_excel("data/meta_richness.xlsx", 
+                      sheet = "nmds_categories")
+View(habitats)
+habitats$habitat<- as.factor(habitats$habitat)
+habitats<- c(1,3,3,1,1,3,3,2,2,2)
 
-# plot the nmds
-ordihull(nmds, # the nmds we created
-         groups= habitats$habitat, #calling the groups from the mpa data frame we made
-         draw = "polygon", # drawing polygons
-         col = 1:3, # shading the plygons
-         label = F #removing labels from the plygons
-)
-plot
+# plotting with ggplot
+data.scores <- as.data.frame(scores(activity_nmds))  #Using the scores function from vegan to extract the site scores and convert to a data.frame
+data.scores$site <- rownames(data.scores)  # create a column of site names, from the rownames of data.scores
+data.scores$habitat <- habitats  #  add the grp variable created earlier
+head(data.scores) 
+
+species.scores <- as.data.frame(scores(activity_nmds, "species"))  #Using the scores function from vegan to extract the species scores and convert to a data.frame
+species.scores$species <- rownames(species.scores)  # create a column of species, from the rownames of species.scores
+head(species.scores) 
+
+grp.1 <- data.scores[data.scores$habitat == "1", ][chull(data.scores[data.scores$habitat == 
+                                                                   "1", c("sites.NMDS1", "sites.NMDS2")]), ]  # hull values for grp A
+
+grp.2 <- data.scores[data.scores$habitat == "2", ][chull(data.scores[data.scores$habitat == 
+                                                                   "2", c("sites.NMDS1", "sites.NMDS2")]), ]  # hull values for grp B
+
+grp.3 <- data.scores[data.scores$habitat == "3", ][chull(data.scores[data.scores$habitat == 
+                                                                       "3", c("sites.NMDS1", "sites.NMDS2")]), ]  # hull values for grp B
+
+hull.data <- rbind(grp.1, grp.2, grp.3)  #combine grp.a and grp.b
+hull.data
+
+library(tidyverse)
+Colours <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00")
+names(Colours) <- c("BW", "LI", "SOSR", "WB", "WOSR", "WW")
+Colours_darker <- darken(Colours, 0.4)
+names(Colours_darker) <- c("BW", "LI", "SOSR", "WB", "WOSR", "WW")
+
+(  activity_NMDS_plot <- ggplot() +
+    geom_polygon(data=hull.data,aes(x=sites.NMDS1,y=sites.NMDS2,fill=habitat,group=habitat),alpha=0.30) + # add the convex hulls
+    #geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),alpha=0.5) +  # add the species labels
+    geom_point(data=data.scores,aes(x=sites.NMDS1,y=sites.NMDS2,colour=habitat),size=3) + # add the point markers
+    #geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label=site),size=6,vjust=0) +  # add the site labels
+    scale_colour_manual(values=Colours) +
+    scale_fill_manual(values=Colours) +
+    # scale_x_continuous(limits = c(-1.4, 3), breaks = c(-1,0,1,2,3)) +
+    # scale_y_continuous(limits = c(-1.4, 1.2), breaks = c(-1,-0.5,0, 0.5 ,1)) +
+    scale_x_continuous(limits = c(-0.7, 1.6), breaks = c(-0.5,0,0.5,1,1.5)) +
+    scale_y_continuous(limits = c(-0.7, 0.5), breaks = c(-0.5,-0.25,0,0.25,0.5)) +
+    #coord_equal() 
+    ggtitle("Invertebrates") +
+    theme(plot.title = element_text(hjust = 0.5)))
+
 # SIMPER 
 basic_simper_activity<- simper(activity_nmds, #our community data set
                       permutations = 999) # permutations to run
 
 summary(basic_simper , ordered = TRUE) #summary is the total contrast.
 
-habitat_simper<- simper(activity_nmds, 
+habitat_simper<- simper(activity, 
                         habitats$habitat,
                         permutations = 999)
 summary(habitat_simper, ordered = T)
 stressplot(nmds)
 ordiplot(nmds, type= "text")
 
-data.scores <- as.data.frame(scores(nmds))  #Using the scores function from vegan to extract the site scores and convert to a data.frame
-data.scores$site <- rownames(data.scores)  # create a column of site names, from the rownames of data.scores
-data.scores$grp <- grp  #  add the grp variable created earlier
-head(data.scores) 
 
 ## NMDS Relative Abundance ----
 # import the dataset

@@ -53,7 +53,7 @@ time_aci <- merged %>%
             se_aci = sd(ACI_low) /sqrt(n()))%>%
   ungroup()
 
-ggplot(merged, aes(x = ACI_full, y = richness, color = site)) +
+ggplot(merged, aes(x = ACI_full, y = richness, color = habitat)) +
   geom_line() +  # Add lines
   geom_point() +  # Add points
   labs(x = "Time", y = "Average ACI Low Frequency Band", color = "Habitat Category") +  # Labels
