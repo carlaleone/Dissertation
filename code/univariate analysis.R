@@ -25,6 +25,18 @@ boxplot(low_richness$richness~low_richness$habitat)
 boxplot(low_richness$richness~low_richness$site)
 plot(low_richness$richness~low_richness$time)
 
+### low freq max richness ----
+low_meta <- read_excel("data/meta_richness.xlsx", 
+                       sheet = "low_presence")
+View(low_meta)
+boxplot(low_meta$max_richness~low_meta$habitat)
+
+aov_max_richness<- aov(max_richness~habitat, data=low_meta)
+summary(aov_max_richness)
+
+kw_low_max_richness<- kruskal.test(max_richness~habitat, data=low_meta)
+kw_low_max_richness
+
 ### low freq diversity----
 low_richness <- read_excel("data/meta_richness.xlsx", 
                             sheet = "low_presence")
@@ -50,6 +62,18 @@ help(rarefy)
 # Function to calculate rarefied species richness
 
 
+### low freq richness vs time ----
+low_timeseries <- read_excel("data/meta_richness.xlsx", 
+                           sheet = "low_freq")
+
+View(low_timeseries)
+
+#plot richness vs time
+ggplot(low_timeseries, aes(x = time, y = richness, color = habitat)) +
+  geom_line() +  # Add lines
+  geom_point() +  # Add points
+  labs(x = "Time", y = "Average Richness", color = "Habitat Category") +  # Labels
+  theme_minimal()  # Optional: change theme if desired
 ## Specpool to calculate richness----
 View(richness)
 colnames(richness)
@@ -72,7 +96,7 @@ low_richness <- low_richness %>%
 View(low_richness)
 richness$habitat<- as.factor(richness$habitat)
 
-## Data frame with richness per site
+## Data frame with richness per site 
 richness <- richness %>%
   mutate(max_richness = case_when(
     site %in% c("port_dinallaen") ~ "12",
