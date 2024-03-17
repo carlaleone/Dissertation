@@ -12,6 +12,43 @@ library(readxl)
 meta_richness <- read_excel("data/meta_richness.xlsx", 
                             sheet = "big_sheet (2)")
 View(meta_richness)
+meta_richness$habitat<- as.factor(meta_richness$habitat)
+
+### Richness by habitat ----
+boxplot(meta_richness$richness~meta_richness$habitat)
+boxplot(meta_richness$richness~meta_richness$site)
+
+### low freq richness ----
+low_meta <- read_excel("data/meta_richness.xlsx", 
+                            sheet = "low_freq")
+boxplot(low_richness$richness~low_richness$habitat)
+boxplot(low_richness$richness~low_richness$site)
+plot(low_richness$richness~low_richness$time)
+
+### low freq diversity----
+low_richness <- read_excel("data/meta_richness.xlsx", 
+                            sheet = "low_presence")
+boxplot(low_richness$simpsons~low_richness$habitat)
+View(low_richness)
+## anova on low frequency diversity
+aov_low_freq_diversity<- aov(simpsons~habitat, data= low_richness)
+summary(aov_low_freq_diversity)
+
+kw_low_freq_diversity<- kruskal.test(simpsons~habitat, data=low_richness)
+kw_low_freq_diversity
+
+
+## Trying to rarify species richness
+rareify <- read_excel("data/meta_richness.xlsx", 
+                      sheet = "low_abundance")
+View(rareify)
+rareify<- subset(rareify, select = -c(simpsons,habitat, max_richness,total) ) #remove unnecessary columnsc
+rareify<- rareify %>%
+  column_to_rownames(var = "site")
+help(rarefy)
+
+# Function to calculate rarefied species richness
+
 
 ## Specpool to calculate richness----
 View(richness)
@@ -24,7 +61,7 @@ richness_specpool <- sapply(richness_specpool, as.numeric)
 specpool(richness_specpool, site, smallsample=TRUE)
 
 ## Add column for habitat ----
-richness <- richness %>%
+low_richness <- low_richness %>%
   mutate(habitat = case_when(
     site %in% c("port_dinallaen", "ardmore", "gallanach_bay") ~ "1",
     site %in% c("craignish", "skye", "kintyre") ~ "2",
@@ -32,7 +69,7 @@ richness <- richness %>%
     TRUE ~ NA_character_  # In case there are unmatched sites
   )) #match sites to habitat
 
-View(richness)
+View(low_richness)
 richness$habitat<- as.factor(richness$habitat)
 
 ## Data frame with richness per site

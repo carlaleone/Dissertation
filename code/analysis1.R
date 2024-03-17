@@ -12,38 +12,7 @@ library(readxl)
 meta_richness <- read_excel("data/meta_richness.xlsx", 
                             sheet = "big_sheet (2)")
 View(meta_richness)
-
-## Add column for habitat ----
-richness <- meta_richness %>%
-  mutate(habitat = case_when(
-    site %in% c("port_dinallaen", "ardmore", "gallanach_bay") ~ "1",
-    site %in% c("craignish", "skye", "kintyre") ~ "2",
-    site %in% c("gansey_bay", "kyles_of_bute", "isle_of_soay", "canna") ~ "3",
-    TRUE ~ NA_character_  # In case there are unmatched sites
-  )) #match sites to habitat
-
-View(richness)
-richness$habitat<- as.factor(richness$habitat)
-
-
-## Data frame with richness per site
-richness <- richness %>%
-  mutate(max_richness = case_when(
-    site %in% c("port_dinallaen") ~ "12",
-    site %in% c("gallanach_bay") ~ "9",
-    site %in% c("ardmore") ~ "15",
-    site %in% c("craignish") ~ "12",
-    site %in% c("skye") ~ "13",
-    site %in% c("kintyre") ~ "9",
-    site %in% c("gansey_bay") ~ "8",
-    site %in% c("kyles_of_bute") ~ "12",
-    site %in% c("isle_of_soay") ~ "13",
-    site %in% c("canna") ~ "12",
-    TRUE ~ NA_character_  # In case there are unmatched sites
-  )) #match sites to total richness
-richness$max_richness<- as.numeric(richness$max_richness)
-
-
+meta_richness$habitat<- as.factor(meta_richness$habitat)
 
 ## NMDS Total Richness----
 max_richness <- read_excel("data/meta_richness.xlsx", 
@@ -235,6 +204,95 @@ habitat_simper<- simper(presence_nmds,
 summary(habitat_simper)
 
 
+## NMDS low richness ----
+nmds_low_activity_matrix<- read_excel("data/meta_richness.xlsx", 
+                                      sheet = "low_presence")
+nmds_low_richness_matrix<- subset(nmds_low_richness_matrix, select = -c(simpsons,habitat, max_richness) ) #remove unnecessary columnsc
+
+nmds_low_richness_matrix<- nmds_low_richness_matrix %>%
+  column_to_rownames(var = "site")
+View(nmds_low_richness_matrix)
+
+##nmds
+nmds_low_richness<-  metaMDS(nmds_low_richness_matrix, #the community data
+                                            distance = "bray",
+                             autotransform = F,
+                             # Using bray-curtis distance
+                                            try = 300)
+
+nmds_low_richness
+plot(nmds_low_richness)
+stressplot(nmds_low_richness)
+ordiplot(nmds_low_richness, type= "text")
+
+
+## adding habitat
+habitats <- read_excel("data/meta_richness.xlsx", 
+                       sheet = "habitats")
+View(habitats)
+habitats$habitat<- as.factor(habitats$habitat)
+
+#simper
+basic_simper<- simper(nmds_low_richness_matrix, #our community data set
+                      permutations = 999) # permutations to run
+
+summary(basic_simper , ordered = TRUE) #summary is the total contrast.
+
+habitat_simper<- simper(nmds_low_richness_matrix, 
+                        habitats$habitat,
+                        permutations = 999)
+summary(habitat_simper)
+
+## NMDS low abundance ----
+nmds_low_abundance_matrix<- read_excel("data/meta_richness.xlsx", 
+                                      sheet = "low_relative_abundance")
+View(nmds_low_abundance_matrix)
+
+nmds_low_abundance_matrix<- nmds_low_abundance_matrix %>%
+  column_to_rownames(var = "site")
+View(nmds_low_abundance_matrix)
+
+##nmds
+nmds_low_abundance<-  metaMDS(nmds_low_abundance_matrix, #the community data
+                             distance = "bray",
+                             autotransform = F,
+                             # Using bray-curtis distance
+                             try = 300)
+
+nmds_low_abundance
+plot(nmds_low_abundance)
+stressplot(nmds_low_abundance)
+ordiplot(nmds_low_abundance, type= "text")
+
+
+## adding habitat
+habitats <- read_excel("data/meta_richness.xlsx", 
+                       sheet = "habitats")
+View(habitats)
+habitats$habitat<- as.factor(habitats$habitat)
+
+#simper
+basic_simper<- simper(nmds_low_abundance_matrix, #our community data set
+                      permutations = 999) # permutations to run
+
+summary(basic_simper , ordered = TRUE) #summary is the total contrast.
+# none have significant p values, but highest ratio is the thump
+
+habitat_simper<- simper(nmds_low_abundance_matrix, 
+                        habitats$habitat,
+                        permutations = 999)
+summary(habitat_simper)
+# difference between 1-2 = knock
+# difference between 1-3 = croak and knock
+# difference between 2-3 = low long grunt
+
+##Plot
+ordihull(nmds_low_abundance_matrix, # the nmds we created
+         groups= habitats$habitat, #calling the groups from the mpa data frame we made
+         draw = "polygon", # drawing polygons
+         col = 1:3, # shading the plygons
+         label = FALSE #removing labels from the plygons
+) 
 ## Richness vs time ----
 class(meta_richness$time)
 View(meta_richness)
