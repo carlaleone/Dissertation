@@ -1,8 +1,14 @@
+---
+title: "Univariate"
+output: html_document
+date: "2024-03-18"
+---
 # Univariate comparisons Dissertation
 # 12/03/2024
 # Carla Leone
 
-## Install packages and load data ----
+## Install packages and load data 
+```{r}
 install.packages("tidyverse")
 install.packages("vegan")
 library(tidyverse)
@@ -13,41 +19,133 @@ meta_richness <- read_excel("data/meta_richness.xlsx",
                             sheet = "big_sheet (2)")
 View(meta_richness)
 meta_richness$habitat<- as.factor(meta_richness$habitat)
+meta_richness$revised_habitat<- as.factor(meta_richness$revised_habitat)
+```
 
-### Richness by habitat ----
+# Full Band Analyses
+## Richness by habitat 
+first looking at some boxplots
+```{r}
 boxplot(meta_richness$richness~meta_richness$revised_habitat)
 boxplot(meta_richness$simpson~meta_richness$revised_habitat)
+```
 
-### low freq richness ----
+
+# Low Frequency Band Analyses
+## low freq richness 
+Difference in sample richness for each habitat
+```{r}
 low_meta <- read_excel("data/meta_richness.xlsx", 
                             sheet = "low_freq")
 boxplot(low_meta$richness~low_meta$revised_habitat)
 boxplot(low_meta$simpsons~low_meta$revised_habitat)
 plot(low_meta$richness~low_meta$time)
+```
 
-### low freq max richness ----
-low_meta <- read_excel("data/meta_richness.xlsx", 
+##low freq richness over time with revised habitat
+using the revised eunis habitat classifications
+```{r}
+low_richness_timeseries <- low_meta %>%
+  group_by(time,revised_habitat) %>%
+  summarise(avg = mean(richness),
+            sd = sd(richness),
+            se = sd(richness) /sqrt(n()))%>%
+  ungroup()#gives the stats for each habitat at each time point. Has taken the average richness of each habitat for each time.
+View(low_richness_timeseries)
+
+#plot it with ggplot
+ggplot(low_richness_timeseries, aes(x = time, y = avg, color = revised_habitat)) +
+  geom_line() +  # Add lines
+  geom_point() +  # Add points
+  labs(x = "Time", y = "Average Richness", color = "Habitat Category") +  # Labels
+  theme_minimal()  # Optional: change theme if desired
+
+```
+## low freq richness over time with the original habitat
+```{r}
+low_meta$habitat<- as.factor(low_meta$habitat)
+
+low_richness_timeseries_2 <- low_meta %>%
+  group_by(time,habitat) %>%
+  summarise(avg = mean(richness),
+            sd = sd(richness),
+            se = sd(richness) /sqrt(n()))%>%
+  ungroup()#gives the stats for each habitat at each time point. Has taken the average richness of each habitat for each time.
+View(low_richness_timeseries_2)
+
+#plot it with ggplot
+ggplot(low_richness_timeseries_2, aes(x = time, y = avg, color = habitat)) +
+  geom_line() +  # Add lines
+  geom_point() +  # Add points
+  labs(x = "Time", y = "Average Richness", color = "Habitat Category") +  # Labels
+  theme_minimal()  # Optional: change theme if desired
+```
+
+
+
+## low freq max richness 
+```{r}
+low_max_richness <- read_excel("data/meta_richness.xlsx", 
                        sheet = "low_presence")
-View(low_meta)
-boxplot(low_meta$max_richness~low_meta$habitat)
+
+boxplot(low_max_richness$max_richness~low_max_richness$habitat)
 
 aov_max_richness<- aov(max_richness~habitat, data=low_meta)
 summary(aov_max_richness)
 
 kw_low_max_richness<- kruskal.test(max_richness~habitat, data=low_meta)
 kw_low_max_richness
+```
 
-### low freq diversity----
-low_richness <- read_excel("data/meta_richness.xlsx", 
+## low freq max richness with revised habitat
+```{r}
+low_max_richness_revised <- low_meta %>%
+  group_by(site,revised_habitat) %>%
+  summarise(avg = mean(max_richness),
+            sd = sd(max_richness),
+            se = sd(max_richness) /sqrt(n()))%>%
+  ungroup()#g
+View(low_max_richness)
+boxplot(low_max_richness_revised$avg~low_max_richness_revised$revised_habitat)
+
+
+```
+
+
+
+## low freq diversity with simpsons index
+```{r}
+low_diversity <- read_excel("data/meta_richness.xlsx", 
                             sheet = "low_presence")
-boxplot(low_richness$simpsons~low_richness$habitat)
+boxplot(low_diversity$simpsons~low_diversity$habitat)
 View(low_richness)
 ## anova on low frequency diversity
-aov_low_freq_diversity<- aov(simpsons~habitat, data= low_richness)
+aov_low_freq_diversity<- aov(simpsons~habitat, data= low_diversity)
 summary(aov_low_freq_diversity)
 
-kw_low_freq_diversity<- kruskal.test(simpsons~habitat, data=low_richness)
+kw_low_freq_diversity<- kruskal.test(simpsons~habitat, data=low_diversity)
 kw_low_freq_diversity
+```
+## low freq diversity with the revised habitats
+```{r}
+low_diversity_revised <- low_meta %>%
+  group_by(site,revised_habitat) %>%
+  summarise(avg = mean(simpsons),
+            sd = sd(simpsons),
+            se = sd(simpsons) /sqrt(n()))%>%
+  ungroup()
+boxplot(low_diversity_revised$avg~low_diversity_revised$revised_habitat)
+
+#anova
+aov_low_diversity_revised<- aov(avg~revised_habitat, data= low_diversity_revised)
+summary(aov_low_diversity_revised)
+plot(aov_low_diversity_revised)
+
+#kruskal wallis
+kw_low_diversity_revised<- kruskal.test(avg~revised_habitat, data= low_diversity_revised)
+kw_low_diversity_revised
+#not significant
+```
 
 
 ## Trying to rarify species richness
