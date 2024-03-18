@@ -1,8 +1,15 @@
+---
+title: "multivariate"
+output: html_document
+date: "2024-03-18"
+---
 # Dissertation NMDS Analysis
 # Carla Leone
 # 5th March, 2024
 
-## Load the dataset and packages ----
+## Load the dataset and packages 
+```{r}
+
 install.packages("tidyverse")
 install.packages("vegan")
 library(tidyverse)
@@ -13,46 +20,91 @@ meta_richness <- read_excel("data/meta_richness.xlsx",
                             sheet = "big_sheet (2)")
 View(meta_richness)
 meta_richness$habitat<- as.factor(meta_richness$habitat)
+```
+## PCA for the low frequency presence/absence data
+```{r}
+low_pres<- read_excel("data/meta_richness.xlsx", 
+                            sheet = "low_presence")
+View(low_pres)
 
-## NMDS Total Richness----
-max_richness <- read_excel("data/meta_richness.xlsx", 
-                                       sheet = "RICHNESS")
-View(max_richness)
+low_pres<- subset(low_pres, select = -c(max_richness, simpsons, habitat) ) #remove unnecessary columnsc
+low_pres<- low_pres %>%
+  column_to_rownames(var = "site") # make site the name of the rows
+# try the PCA
+PCA<- rda(low_pres, scale=F)
+plot(PCA)
+summary(PCA)
+biplot(PCA)
+```
 
-### Delete unnecessary columns
-max_richness<- subset(max_richness, select = -c(cetacean,boat, water, avg_richness,max_richnes, sample_richness,high,low, high_low, samples) ) #remove unnecessary columnsc
-class(max_richness)
-str(max_richness)
+## PCA for the low frequency relative abundance data
+```{r}
+low_abundance<- read_excel("data/meta_richness.xlsx", 
+                            sheet = "low_relative_abundance")
+View(low_abundance)
+low_abundance<- low_abundance %>%
+  column_to_rownames(var = "site") # make site the name of the rows
 
-max_richness<- max_richness %>%
+# try the PCA
+PCA2<- rda(low_abundance, scale=F)
+plot(PCA)
+summary(PCA2)
+#very low eigenvalues
+#very low loadings for the sites for each PC
+biplot(PCA2)
+screeplot(PCA2)
+# Not worth more than PC2
+```
+## NMDS Total Richness, low frequency band
+```{r}
+
+low_richness <- read_excel("data/meta_richness.xlsx", 
+                                       sheet = "low_presence")
+View(low_richness)
+
+# Delete unnecessary columns
+low_richness<- subset(low_richness, select = -c(max_richness,simpsons, habitat) ) #remove unnecessary columnsc
+
+low_richness<- low_richness %>%
   column_to_rownames(var = "site") # make site the name of the rows
 
 
-### Make separate for habitats
+# Make separate for habitats
 habitats <- read_excel("data/meta_richness.xlsx", 
-                         sheet = "nmds_categories")
+                         sheet = "habitats")
 View(habitats)
 habitats$habitat<- as.factor(habitats$habitat)
 
 ### Distance matrix calculation
-sound_dist<- vegdist(presence_nmds, method="bray", binary= TRUE)
-sound_dist
+low_richness_dist<- vegdist(presence_nmds, method="jaccard", binary= TRUE)
+low_richness_dist
 
 ### NMDS
-richness_nmds<- metaMDS(max_richness, #the community data
-                    distance = "bray", # Using bray-curtis distance
+low_richness_nmds<- metaMDS(low_richness, #the community data
+                    distance = "jaccard", # Using bray-curtis distance
                     try = 100)
 
-### Plots
-ordihull(max_richness, # the nmds we created
-         groups= habitats$habitat, #calling the groups from the mpa data frame we made
-         draw = "polygon", # drawing polygons
-         col = 1:3, # shading the plygons
-         label = FALSE #removing labels from the plygons
-) 
+plot(low_richness_nmds, type="t")
+low_richness_nmds
+```
 
+
+```{r}
+
+
+# Draw ordihull polygons
+ordihull(low_richness, # NMDS results object
+         groups = habitats$habitat, # Grouping variable
+         draw = "polygon", # Draw polygons
+         col = 1:3, # Specify colors for polygons
+         label = FALSE # Remove labels from polygons
+)
+
+help(ordihull)
+```
 ### SIMPER
-basic_simper<- simper(max_richness, #our community data set
+```{r}
+basic_simper_<- simper(max_richness, #our community data set
                       permutations = 999) # permutations to run
 
 summary(basic_simper , ordered = TRUE) #summary is the total contrast.
@@ -61,7 +113,7 @@ habitat_simper<- simper(max_richness,
                          habitats$habitat,
                          permutations = 999)
 summary(habitat_simper)
-
+```
 ## NMDS Activity ---- 
 # Load the data
 library(readxl)
@@ -242,14 +294,6 @@ habitat_simper<- simper(nmds_low_richness_matrix,
                         habitats$habitat,
                         permutations = 999)
 summary(habitat_simper)
-#plot
-plot.new()
-ordihull(low_richness, # NMDS results object
-         groups = habitats$habitat, # Grouping variable
-         draw = "polygon", # Draw polygons
-         col = 1:3, # Specify colors for polygons
-         label = FALSE # Remove labels from polygons
-)
 
 ## NMDS low abundance ----
 nmds_low_abundance_matrix<- read_excel("data/meta_richness.xlsx", 
