@@ -68,21 +68,21 @@ low_timeseries <- read_excel("data/meta_richness.xlsx",
 
 View(low_timeseries)
 
-
+low_timeseries$habitat<- as.factor(low_timeseries$habitat)
 
 #create subset of data
-df_avg_ratios <- ratios %>%
+df_low_habitat_time <- low_timeseries %>%
   group_by(time,habitat) %>%
-  summarise(avg_ratio = mean(invert_dominance),
-            sd_ratio = sd(invert_dominance),
-            se_ratio = sd(invert_dominance) /sqrt(n()))%>%
+  summarise(avg = mean(richness),
+            sd = sd(richness),
+            se = sd(richness) /sqrt(n()))%>%
   ungroup()#gives the stats for each habitat at each time point. Has taken the average richness of each habitat for each time.
 
 
 low_meta$revised_habitat<- as.factor(low_meta$revised_habitat)
 
 #plot richness vs time
-ggplot(low_meta, aes(x = time, y = richness, color = revised_habitat)) +
+ggplot(df_low_habitat_time, aes(x = time, y = avg, color = habitat)) +
   geom_line() +  # Add lines
   geom_point() +  # Add points
   labs(x = "Time", y = "Average Richness", color = "Habitat Category") +  # Labels

@@ -74,6 +74,7 @@ habitats <- read_excel("data/meta_richness.xlsx",
                          sheet = "habitats")
 View(habitats)
 habitats$habitat<- as.factor(habitats$habitat)
+habitats<- subset(habitats, select = c(site, habitat))
 
 ### Distance matrix calculation
 low_richness_dist<- vegdist(presence_nmds, method="jaccard", binary= TRUE)
