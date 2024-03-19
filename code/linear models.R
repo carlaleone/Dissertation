@@ -5,9 +5,9 @@
 ## Load the data----
 indices <- read_excel("data/results.clean.xlsx", 
                       sheet = "matched_times")
-meta_richness <- read_excel("data/meta_richness.xlsx", 
+phonic <- read_excel("data/meta_richness.xlsx", 
                             sheet = "big_sheet (2)")
-meta_richness
+
 View(indices)
 indices<- subset(indices, select = -c(time) ) #remove unnecessary columns
 
