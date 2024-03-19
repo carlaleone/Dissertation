@@ -9,13 +9,49 @@ phonic <- read_excel("data/meta_richness.xlsx",
                             sheet = "big_sheet (2)")
 
 View(indices)
-indices<- subset(indices, select = -c(time) ) #remove unnecessary columns
+indices<- subset(indices, select = -c(long, lat) ) #remove unnecessary columns
 
 # merge the datasets
 indices <- indices %>%
   rename(minute = recording_minute)
 merged <- merge(indices, meta_richness, by = c("site", "minute"))
 View(merged)                
+
+## Random Forest Attempt----
+install.packages("randomForest")
+library(randomForest)
+install.packages("caret")
+library(caret)
+
+library(datasets)
+data<- iris
+View(data)
+
+str(merged)
+#193 observations of 67 variables
+merged2<- subset(merged, select = c(1, 4:25, 51))
+View(merged2)
+merged2<- merged2 %>%
+  column_to_rownames(var = "site")
+
+# dataset with only richness and the indices
+merged3<- subset(merged2, select = -c(site))
+merged3$richness<- as.factor(merged3$richness)
+View(merged3)
+
+#training
+set.seed(222)
+ind <- sample(2, nrow(merged3), replace = TRUE, prob = c(0.7, 0.3))
+train <- merged3[ind==1,] #65 values 
+test <- merged3[ind==2,] # 131 values
+
+#random forest
+rf <- randomForest(richness~., data=train, proximity=TRUE) 
+print(rf)
+
+p1 <- predict(rf, train)
+confusionMatrix(p1, train$ richness)
+
 
 #ACI Low----
 avg_aci_low <- merged %>%
