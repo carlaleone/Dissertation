@@ -52,6 +52,188 @@ print(rf)
 p1 <- predict(rf, train)
 confusionMatrix(p1, train$ richness)
 
+# adjust the model because clearly has a lot of error
+t <- tuneRF(train[,-5], train[,5],
+            stepFactor = 0.5,
+            plot = TRUE,
+            ntreeTry = 150,
+            trace = TRUE,
+            improve = 0.05)
+
+# not super sure what this does but lets see
+hist(treesize(rf),
+     main = "No. of Nodes for the Trees",
+     col = "green")
+
+#Variable Importance
+varImpPlot(rf,
+           sort = T,
+           n.var = 10,
+           main = "Top 10 - Variable Importance")
+importance(rf)
+
+MDSplot(rf, train$richness)
+
+
+
+## Try the random forest plot to predict simpsons instead of richness?----
+merged4<- subset(merged, select = c( 4:25, 59))
+merged4$habitat.y<- as.factor(merged4$habitat.y)
+View(merged4)
+
+#training
+set.seed(222)
+ind <- sample(2, nrow(merged4), replace = TRUE, prob = c(0.7, 0.3))
+train <- merged4[ind==1,] #65 values 
+test <- merged4[ind==2,] # 131 values
+
+#random forest
+rf <- randomForest(habitat.y~., data=train, proximity=TRUE) 
+print(rf)
+plot(rf)
+
+p1 <- predict(rf, train)
+confusionMatrix(p1, train$ habitat.y)
+
+p2 <- predict(rf, test)
+confusionMatrix(p2, test$ habitat.y)
+# confusion matrix results:
+# accuracy = 0.968, p value < 0.01
+
+# adjust the model because clearly has a lot of error
+t <- tuneRF(train[,-5], train[,5],
+            stepFactor = 0.5,
+            plot = TRUE,
+            ntreeTry = 150,
+            trace = TRUE,
+            improve = 0.05)
+
+# not super sure what this does but lets see
+hist(treesize(rf),
+     main = "No. of Nodes for the Trees",
+     col = "green")
+#what do the nodes mean?
+
+#Variable Importance
+varImpPlot(rf,
+           sort = T,
+           n.var = 10,
+           main = "Top 10 - Variable Importance")
+importance(rf)
+# important variables:
+# M High, SE high, H high,SE full, H full, AEI High, M full
+MDSplot(rf, train$richness)
+
+### Try it with the new habitats----
+merged5<- subset(merged, select = c( 4:25, 65))
+merged5$revised_habitat<- as.factor(merged5$revised_habitat)
+View(merged4)
+
+#training
+set.seed(222)
+ind <- sample(2, nrow(merged5), replace = TRUE, prob = c(0.7, 0.3))
+train <- merged5[ind==1,] #65 values 
+test <- merged5[ind==2,] # 131 values
+
+#random forest
+rf <- randomForest(revised_habitat~., data=train, proximity=TRUE) 
+print(rf)
+plot(rf)
+
+p1 <- predict(rf, train)
+confusionMatrix(p1, train$ revised_habitat)
+
+p2 <- predict(rf, test)
+confusionMatrix(p2, test$ revised_habitat)
+# confusion matrix results:
+# accuracy = 1, p value < 0.01
+
+# adjust the model because clearly has a lot of error
+t <- tuneRF(train[,-5], train[,5],
+            stepFactor = 0.5,
+            plot = TRUE,
+            ntreeTry = 150,
+            trace = TRUE,
+            improve = 0.05)
+
+# not super sure what this does but lets see
+hist(treesize(rf),
+     main = "No. of Nodes for the Trees",
+     col = "green")
+#what do the nodes mean?
+
+#Variable Importance
+varImpPlot(rf,
+           sort = T,
+           n.var = 10,
+           main = "Top 10 - Variable Importance")
+importance(rf)
+# important variables:
+# M High, M full, SE high, SE full, H full, H high, BI high
+
+MDSplot(rf, train$revised_habitat)
+
+
+### Looking at random forest for time variation ----
+str(merged)
+
+# code for summarizing simpsons, may be useful at some point
+merged_simpsons<-  merged %>%
+  subset(select= c(1, 4:25, 67)) %>%
+  group_by(site,simpson) %>%
+  summarize(across(2:21, mean))%>%
+  ungroup()
+View(merged_simpsons)
+merged_simpsons<- subset(select= -c(1))
+
+## Now run the forest model
+merged6<- subset(merged, select = c( 4:25, 30))
+merged6$time<- as.factor(merged6$time)
+View(merged6)
+
+#training
+set.seed(222)
+ind <- sample(2, nrow(merged6), replace = TRUE, prob = c(0.7, 0.3))
+train <- merged6[ind==1,] #65 values 
+test <- merged6[ind==2,] # 131 values
+
+#random forest
+rf <- randomForest(time~., data=train, proximity=TRUE) 
+print(rf)
+plot(rf)
+
+p1 <- predict(rf, train)
+confusionMatrix(p1, train$ time)
+
+p2 <- predict(rf, test)
+confusionMatrix(p2, test$ time)
+# confusion matrix results:
+# accuracy = 1, p value < 0.01
+
+# adjust the model because clearly has a lot of error
+t <- tuneRF(train[,-5], train[,5],
+            stepFactor = 0.5,
+            plot = TRUE,
+            ntreeTry = 150,
+            trace = TRUE,
+            improve = 0.05)
+# not super sure what this does but lets see
+## DOES NOT HELP PREDICT TIME
+
+### Try a PCA with the indices----
+indices_pca_data<- subset(merged_simpsons, select = -c(2))
+indices_pca_data<- indices_pca_data %>%
+  column_to_rownames(var = "site") # make site the name of the rows
+
+# try the PCA
+pca_indices<- rda(indices_pca_data, scale=T)
+plot(pca_indices)
+summary(pca_indices)
+#pca 1 heavy on all the SEs and Hs
+#pca 2 is mainy just the AEI
+biplot(pca_indices)
+screeplot(pca_indices)
+# is it even worth it to use PC2?
 
 #ACI Low----
 avg_aci_low <- merged %>%
