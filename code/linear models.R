@@ -14,9 +14,9 @@ indices<- subset(indices, select = -c(long, lat) ) #remove unnecessary columns
 # merge the datasets
 indices <- indices %>%
   rename(minute = recording_minute)
-merged <- merge(indices, meta_richness, by = c("site", "minute"))
+merged <- merge(indices, phonic, by = c("site", "minute"))
 View(merged)                
-
+str(merged)
 ## Random Forest Attempt----
 install.packages("randomForest")
 library(randomForest)
@@ -47,6 +47,50 @@ test <- merged3[ind==2,] # 131 values
 
 #random forest
 rf <- randomForest(richness~., data=train, proximity=TRUE) 
+print(rf)
+
+p1 <- predict(rf, train)
+confusionMatrix(p1, train$ richness)
+
+# adjust the model because clearly has a lot of error
+t <- tuneRF(train[,-5], train[,5],
+            stepFactor = 0.5,
+            plot = TRUE,
+            ntreeTry = 150,
+            trace = TRUE,
+            improve = 0.05)
+
+# not super sure what this does but lets see
+hist(treesize(rf),
+     main = "No. of Nodes for the Trees",
+     col = "green")
+
+#Variable Importance
+varImpPlot(rf,
+           sort = T,
+           n.var = 10,
+           main = "Top 10 - Variable Importance")
+importance(rf)
+
+MDSplot(rf, train$richness)
+
+### Try forest with low richness ----
+#193 observations of 67 variables
+merged7<- subset(merged, select = c(4:25, 52))
+View(merged7)
+
+# dataset with only richness and the indices
+merged7$low_richness<- as.factor(merged7$low_richness)
+View(merged3)
+
+#training
+set.seed(222)
+ind <- sample(2, nrow(merged7), replace = TRUE, prob = c(0.7, 0.3))
+train <- merged7[ind==1,] #65 values 
+test <- merged7[ind==2,] # 131 values
+
+#random forest
+rf <- randomForest(low_richness~., data=train, proximity=TRUE) 
 print(rf)
 
 p1 <- predict(rf, train)
@@ -125,9 +169,9 @@ importance(rf)
 MDSplot(rf, train$richness)
 
 ### Try it with the new habitats----
-merged5<- subset(merged, select = c( 4:25, 65))
+merged5<- subset(merged, select = c(1, 4:25, 66))
 merged5$revised_habitat<- as.factor(merged5$revised_habitat)
-View(merged4)
+View(merged5)
 
 #training
 set.seed(222)
@@ -137,8 +181,17 @@ test <- merged5[ind==2,] # 131 values
 
 #random forest
 rf <- randomForest(revised_habitat~., data=train, proximity=TRUE) 
+model <- randomForest(revised_habitat ~ . + site, data = train, importance = TRUE)
+print(model)
 print(rf)
 plot(rf)
+
+
+p3<-  predict(model, train)
+confusionMatrix(p1, train$ revised_habitat)
+
+p4<- predict(model, test)
+confusionMatrix(p2, test$ revised_habitat)
 
 p1 <- predict(rf, train)
 confusionMatrix(p1, train$ revised_habitat)
@@ -163,11 +216,11 @@ hist(treesize(rf),
 #what do the nodes mean?
 
 #Variable Importance
-varImpPlot(rf,
+varImpPlot(model,
            sort = T,
            n.var = 10,
            main = "Top 10 - Variable Importance")
-importance(rf)
+importance(model)
 # important variables:
 # M High, M full, SE high, SE full, H full, H high, BI high
 
@@ -178,14 +231,14 @@ MDSplot(rf, train$revised_habitat)
 str(merged)
 
 # code for summarizing simpsons, may be useful at some point
-merged_simpsons<-  merged %>%
-  subset(select= c(1, 4:25, 67)) %>%
-  group_by(site,simpson) %>%
+merged_habitats<-  merged %>%
+  subset(select= c(1, 4:25, 60)) %>%
+  group_by(site,habitat.y) %>%
   summarize(across(2:21, mean))%>%
   ungroup()
-View(merged_simpsons)
-merged_simpsons<- subset(select= -c(1))
-
+View(merged_habitats)
+merged_habitats<- subset(merged_habitats, select= -c(1))
+merged_habitats$habitat.y<- as.factor(merged_habitats$habitat.y)
 ## Now run the forest model
 merged6<- subset(merged, select = c( 4:25, 30))
 merged6$time<- as.factor(merged6$time)
@@ -193,20 +246,20 @@ View(merged6)
 
 #training
 set.seed(222)
-ind <- sample(2, nrow(merged6), replace = TRUE, prob = c(0.7, 0.3))
-train <- merged6[ind==1,] #65 values 
-test <- merged6[ind==2,] # 131 values
+ind <- sample(2, nrow(merged_habitats), replace = TRUE, prob = c(0.7, 0.3))
+train <- merged_habitats[ind==1,] #65 values 
+test <- merged_habitats[ind==2,] # 131 values
 
 #random forest
-rf <- randomForest(time~., data=train, proximity=TRUE) 
+rf <- randomForest(habitat.y~., data=train, proximity=TRUE) 
 print(rf)
 plot(rf)
 
 p1 <- predict(rf, train)
-confusionMatrix(p1, train$ time)
+confusionMatrix(p1, train$ habitat.y)
 
 p2 <- predict(rf, test)
-confusionMatrix(p2, test$ time)
+confusionMatrix(p2, test$ habitat.y)
 # confusion matrix results:
 # accuracy = 1, p value < 0.01
 
