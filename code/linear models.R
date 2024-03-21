@@ -169,8 +169,9 @@ importance(rf)
 MDSplot(rf, train$richness)
 
 ### Try it with the new habitats----
-merged5<- subset(merged, select = c(1, 4:25, 66))
-merged5$revised_habitat<- as.factor(merged5$revised_habitat)
+str(merged)
+merged5<- subset(merged, select = c(1, 4:25, 60))
+merged5$habitat.y<- as.factor(merged5$habitat.y)
 View(merged5)
 
 #training
@@ -239,6 +240,13 @@ merged_habitats<-  merged %>%
 View(merged_habitats)
 merged_habitats<- subset(merged_habitats, select= -c(1))
 merged_habitats$habitat.y<- as.factor(merged_habitats$habitat.y)
+
+#save the excel 
+install.packages("openxlsx")
+library(openxlsx)
+write.xlsx(merged_habitats, "merged_habitats.xlsx")
+write.xlsx(merged5, "merged_full.xlsx")
+
 ## Now run the forest model
 merged6<- subset(merged, select = c( 4:25, 30))
 merged6$time<- as.factor(merged6$time)
