@@ -263,7 +263,7 @@ View(nmds_low_abundance_matrix)
 ##nmds
 nmds_low_abundance<-  metaMDS(nmds_low_abundance_matrix, #the community data
                              distance = "bray",
-                             autotransform = F,
+                             autotransform = T,
                              # Using bray-curtis distance
                              try = 300)
 
@@ -272,6 +272,13 @@ plot(nmds_low_abundance)
 stressplot(nmds_low_abundance)
 ordiplot(nmds_low_abundance, type= "text")
 
+ordihull(nmds_low_abundance_matrix, # the nmds we created
+         groups= habitats$habitat, #calling the groups from the mpa data frame we made
+         draw = "polygon", # drawing polygons
+         col = 1:3, # shading the plygons
+         label = FALSE #removing labels from the plygons
+) 
+
 
 ## adding habitat
 habitats <- read_excel("data/meta_richness.xlsx", 
@@ -279,6 +286,25 @@ habitats <- read_excel("data/meta_richness.xlsx",
 View(habitats)
 habitats$habitat<- as.factor(habitats$habitat)
 
+# Try PERMANOVA
+dist_low_abundance<- vegdist(nmds_low_abundance_matrix, method="bray")
+perm_low_abundance <- adonis2(nmds_low_abundance_matrix ~ habitat, data = habitats, permutations = 999, method="bray")
+
+perm_low_abundance
+
+perm_low_abundance<- adonis2(
+  dist_low_abundance,
+  data,
+  permutations = 999,
+  method = "bray",
+  sqrt.dist = FALSE,
+  add = FALSE,
+  by = "terms",
+  parallel = getOption("mc.cores"),
+  na.action = na.fail,
+  strata = NULL,
+  ...
+)
 #simper
 basic_simper<- simper(nmds_low_abundance_matrix, #our community data set
                       permutations = 999) # permutations to run
