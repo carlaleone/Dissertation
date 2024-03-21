@@ -59,19 +59,41 @@ sites<- get_googlemap(
 install.packages("devtools")
 library(devtools)
 devtools::install_github('oswaldosantos/ggsn')
-install.packages("ggsn")
+install.packages("ggspatial")
+library(ggspatial)
+?ggspatial
 
 # make the map
-ggmap(sites)+
-  geom_point(aes(x=long, y= lat, color = habitat), data=df, alpha=0.5)
-  
-site_map
-site_map +
-  blank() +
-  north(df) +
-  scalebar(df, dist = 4, dist_unit = "km",
-           transform = TRUE, model = "WGS84")
-install.packages("ggsn")
+?geom_point
+site_map<- ggmap(sites)+
+  geom_spatial_point(aes(x=long, y= lat, color = habitat), data=df, alpha=1, size = 2, crs = 4326)
+
+#add the north arrow
+site_map1<- site_map + ggspatial::annotation_north_arrow(location = "tr", 
+                                             pad_x = unit(0.4, "in"), pad_y = unit(0.4, "in"),
+                                             style = ggspatial::north_arrow_nautical(fill = c("grey40", "white"),line_col = "grey20"))
+
+site_map1 + theme_nothing()
+# add scale bar
+site_map2<- site_map1 +  
+  annotation_scale(location = "tl") +
+  coord_sf(crs = 4326)
+
+# remove all the long and lat lines
+site_map3<- site_map2+
+  theme_nothing()
+site_map3
+?coord_sf
+
+## Add the legend 
+
+
+# Show the combined plot
+print(combined_plot)
+
+?annotation_scale
+?coord_sf
+site_map2
 
 geocode("sites", output = "all")
 
