@@ -18,6 +18,7 @@ meta_richness$habitat<- as.factor(meta_richness$habitat)
 max_richness <- read_excel("data/meta_richness.xlsx", 
                                        sheet = "full_presence (2)")
 View(max_richness)
+max_richness<- subset(max_richness, select = -c(knock))
 
 max_richness<- max_richness %>%
   column_to_rownames(var = "site") # make site the name of the rows
@@ -39,6 +40,8 @@ richness_nmds<- metaMDS(max_richness, #the community data
                     distance = "jaccard", # Using bray-curtis distance
                     try = 100)
 richness_nmds
+#stress = 0.099
+#distance = jaccard
 plot(richness_nmds)
 stressplot(richness_nmds)
 
@@ -73,7 +76,70 @@ habitat_simper<- simper(max_richness,
 summary(habitat_simper)
 
 ## NMDS Total Relative Abundance ----
-## NMDS Total Occurence ---- 
+max_relative_abundance <- read_excel("data/meta_richness.xlsx", 
+                           sheet = "full_relative_abundance (2)")
+View(max_relative_abundance)
+max_relative_abundance<- subset(max_relative_abundance, select = -c(knock))
+
+max_relative_abundance<- max_relative_abundance %>%
+  column_to_rownames(var = "site") # make site the name of the rows
+
+
+## Make separate for habitats
+habitats <- read_excel("data/meta_richness.xlsx", 
+                       sheet = "habitats")
+View(habitats)
+habitats$habitat<- as.factor(habitats$habitat)
+habitats<- subset(habitats, select = -c(boats,wind, animals))
+habitats<- habitats %>%
+  column_to_rownames(var = "site")
+
+## Distance matrix calculation
+sound_dist<- vegdist(presence_nmds, method="bray", binary= TRUE)
+sound_dist
+
+### NMDS
+relative_abundance_nmds<- metaMDS(max_relative_abundance, #the community data
+                        distance = "bray",# Using bray-curtis distance
+                        try = 100)
+relative_abundance_nmds
+#stress = 0.0826
+#distance = bray
+plot(relative_abundance_nmds)
+stressplot(relative_abundance_nmds)
+
+### Plots
+
+ordihull(max_relative_abundance, # the nmds we created
+         groups= habitats$habitat, #calling the groups from the mpa data frame we made
+         draw = "polygon", # drawing polygons
+         col = 1:3, # shading the polygons
+         label = FALSE #removing labels from the polygons
+) 
+
+### permanova
+#permanova
+dist_full_relative_abundance<- vegdist(max_relative_abundance, method="bray")
+perm_full_relative_abundance <- adonis2(dist_full_relative_abundance ~ habitat, data = habitats)
+
+perm_full_relative_abundance
+#not significant
+
+#significant 
+
+### SIMPER
+basic_simper<- simper(max_relative_abundance,
+                      distance= "bray",#our community data set
+                      permutations = 999) # permutations to run
+
+summary(basic_simper , ordered = TRUE) #summary is the total contrast.
+
+habitat_simper<- simper(max_relative_abundance, 
+                        habitats$habitat,
+                        distance= "bray",
+                        permutations = 999)
+summary(habitat_simper)
+## NMDS Total Occurrence ---- 
 # Load the data
 library(readxl)
 activity <- read_excel("data/meta_richness.xlsx", 
