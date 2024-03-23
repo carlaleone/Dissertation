@@ -9,13 +9,15 @@ library(tidyverse)
 library(vegan)
 library(readxl)
 
-meta_richness <- read_excel("data/meta_richness.xlsx", 
-                            sheet = "big_sheet (2)")
-View(meta_richness)
+full_richness <- read_excel("data/meta_richness.xlsx", 
+                            sheet = "big_sheet (3)")
+low_richness<- read_excel("data/meta_richness.xlsx", 
+                          sheet = "low_sheet (4)")
+View(low_richness)
 meta_richness$habitat<- as.factor(meta_richness$habitat)
 
 ### Richness by habitat ----
-boxplot(meta_richness$richness~meta_richness$revised_habitat)
+boxplot(full_richness$richness~meta_richness$revised_habitat)
 boxplot(meta_richness$simpson~meta_richness$revised_habitat)
 
 ### low freq richness ----

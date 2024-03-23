@@ -142,42 +142,55 @@ summary(habitat_simper)
 ## NMDS Total Occurrence ---- 
 # Load the data
 library(readxl)
-activity <- read_excel("data/meta_richness.xlsx", 
-                            sheet = "activity")
-activity <- activity %>%
-  mutate(habitat = case_when(
-    site %in% c("port_dinallaen", "ardmore", "gallanach_bay") ~ "1",
-    site %in% c("craignish", "skye", "kintyre") ~ "2",
-    site %in% c("gansey_bay", "kyles_of_bute", "isle_of_soay", "canna") ~ "3",
-    TRUE ~ NA_character_  # In case there are unmatched sites
-  ))
-View(activity)
+full_occurrence <- read_excel("data/meta_richness.xlsx", 
+                            sheet = "full_occurrence (2)")
+View(full_occurrence)
+full_occurrence<- subset(full_occurrence, select = -c(knock))
+
 
 # make the sites the row names
-activity<- activity %>%
+full_occurrence<- full_occurrence %>%
 column_to_rownames(var = "site")
 
-activity<- activity %>% 
-select(-water, -boat, -cetacean)
-View(activity)
-
 # calculating distances
-distances<- vegdist(activity, method="bray")
-distances
+full_occurence_distance<- vegdist(full_occurrence, method="bray")
+full_occurence_distance
 
 # make the nmds
-activity_nmds<- metaMDS(activity, #the community data
+full_occurrence_nmds<- metaMDS(full_occurrence, #the community data
                       distance = "bray",
                k=2,# Using bray-curtis distance
-                      try = 300)
+                      try = 100)
 
-habitats <- read_excel("data/meta_richness.xlsx", 
-                      sheet = "nmds_categories")
-View(habitats)
-habitats$habitat<- as.factor(habitats$habitat)
-habitats<- c(1,3,3,1,1,3,3,2,2,2)
+full_occurrence_nmds
+#stress = 0.0798
+# method of distance is bray curtis
 
-# plotting with ggplot
+
+
+### permanova
+#permanova
+dist_full_occurrence<- vegdist(max_relative_abundance, method="bray")
+perm_full_occurrence <- adonis2(full_occurrence ~ habitat, data = habitats)
+
+perm_full_occurrence
+# significant with a p value =. 0.009, f = 3.4561, df habitat =3, df resid =7, df total =9
+
+
+### SIMPER
+basic_simper_full_occurence<- simper(full_occurrence,
+                      distance= "bray",#our community data set
+                      permutations = 999) # permutations to run
+
+summary(basic_simper , ordered = TRUE) #summary is the total contrast.
+
+habitat_simper<- simper(max_relative_abundance, 
+                        habitats$habitat,
+                        distance= "bray",
+                        permutations = 999)
+summary(habitat_simper)
+
+# plotting with ggplot ----
 data.scores <- as.data.frame(scores(activity_nmds))  #Using the scores function from vegan to extract the site scores and convert to a data.frame
 data.scores$site <- rownames(data.scores)  # create a column of site names, from the rownames of data.scores
 data.scores$habitat <- habitats  #  add the grp variable created earlier
@@ -403,7 +416,7 @@ ordihull(nmds_low_abundance_matrix, # the nmds we created
          label = FALSE #removing labels from the plygons
 ) 
 
-### low activity nmds----
+### low occurrence nmds----
 nmds_low_activity_matrix<- read_excel("data/meta_richness.xlsx", 
                                        sheet = "low_activity")
 View(nmds_low_activity_matrix)
