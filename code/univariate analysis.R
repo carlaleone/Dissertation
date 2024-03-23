@@ -14,19 +14,25 @@ full_richness <- read_excel("data/meta_richness.xlsx",
 low_richness<- read_excel("data/meta_richness.xlsx", 
                           sheet = "low_sheet (4)")
 View(low_richness)
-meta_richness$habitat<- as.factor(meta_richness$habitat)
-
+full_richness$habitat<- as.factor(full_richness$habitat)
+full_richness$max_richness<- as.numeric(full_richness$max_richnes)
 ### Richness by habitat ----
-boxplot(full_richness$richness~meta_richness$revised_habitat)
-boxplot(meta_richness$simpson~meta_richness$revised_habitat)
+## Initial Boxplots 
+boxplot(full_richness$richness~full_richness$habitat)
+#look very similar
+boxplot(full_richness$richness~full_richness$revised_habitat)
+#1 has the highest, but very large error bars
+boxplot(low_richness$low_richness~low_richness$habitat)
+#see some differences, with 2 at the lowest, 
+boxplot(low_richness$low_richness~low_richness$revised_habitat)
+#with the revised habitat, 1 has an even higher richness
 
-### low freq richness ----
-low_meta <- read_excel("data/meta_richness.xlsx", 
-                            sheet = "low_freq")
-boxplot(low_meta$richness~low_meta$revised_habitat)
-boxplot(low_meta$simpsons~low_meta$revised_habitat)
-plot(low_meta$richness~low_meta$time)
-
+### Max richness comparisons----
+full_max_richness <- full_richness %>%
+  group_by(site,habitat) %>%
+  summarise(max_richness = mean(max_richness)) %>%
+  ungroup()
+View(full_max_richness)
 ### low freq max richness ----
 low_meta <- read_excel("data/meta_richness.xlsx", 
                        sheet = "low_presence")
@@ -52,14 +58,6 @@ kw_low_freq_diversity<- kruskal.test(simpsons~habitat, data=low_richness)
 kw_low_freq_diversity
 
 
-## Trying to rarify species richness
-rareify <- read_excel("data/meta_richness.xlsx", 
-                      sheet = "low_abundance")
-View(rareify)
-rareify<- subset(rareify, select = -c(simpsons,habitat, max_richness,total) ) #remove unnecessary columnsc
-rareify<- rareify %>%
-  column_to_rownames(var = "site")
-help(rarefy)
 
 # Function to calculate rarefied species richness
 
