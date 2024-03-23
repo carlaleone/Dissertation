@@ -35,6 +35,12 @@ full_max_richness <- full_richness %>%
   ungroup()
 View(full_max_richness)
 
+#boxplots
+boxplot(full_max_richness$max_richness~full_max_richness$habitat)
+kw_full_max_richness<- kruskal.test(max_richness~habitat, data=full_max_richness)
+kw_full_max_richness #not sig, p=0.876
+
+
 ##low band
 low_richness$max_richness<- as.numeric(low_richness$max_richness)
 low_max_richness <- low_richness %>%
@@ -42,6 +48,39 @@ low_max_richness <- low_richness %>%
   summarise(max_richness = mean(max_richness)) %>%
   ungroup()
 View(low_max_richness)
+
+#boxplots
+boxplot(low_max_richness$max_richness~low_max_richness$habitat)
+kw_low_max_richness<- kruskal.test(max_richness~habitat, data= low_max_richness)
+kw_low_max_richness
+#not significant, but given the plots looks like 2 is far lower
+
+
+### Diversity Comparisons ----
+## full band
+full_diversity <- full_richness %>%
+  group_by(site,habitat, revised_habitat) %>%
+  summarise(diversity = mean(simpson)) %>%
+  ungroup()
+View(full_diversity)
+boxplot(full_diversity$diversity~full_diversity$habitat)
+boxplot(full_diversity$diversity~full_diversity$revised_habitat)
+kw_full_diversity<- kruskal.test(diversity~habitat, data=full_diversity)
+kw_full_diversity
+# not significant 
+
+## low band
+low_diversity <- low_richness %>%
+  group_by(site,habitat, revised_habitat) %>%
+  summarise(diversity = mean(simpsons)) %>%
+  ungroup()
+boxplot(low_diversity$diversity~low_diversity$revised_habitat)
+
+boxplot(low_diversity$diversity~low_diversity$habitat)
+kw_low_diversity<- kruskal.test(diversity~habitat, data=low_diversity)
+kw_low_diversity
+# very close to being significant : p= 0.077
+
 ### low freq max richness ----
 low_meta <- read_excel("data/meta_richness.xlsx", 
                        sheet = "low_presence")
@@ -54,6 +93,25 @@ summary(aov_max_richness)
 kw_low_max_richness<- kruskal.test(max_richness~habitat, data=low_meta)
 kw_low_max_richness
 
+
+## Low Band Richness vs Time----
+lm_lowrichness_time<- lm(low_richness ~ time+site, data=low_richness)
+plot(lm_lowrichness_time)
+summary(lm_lowrichness_time)
+str(low_richness)
+
+##using spearman
+View(low_richness)
+correlation_habitat1 <- cor(low_richness$low_richness[low_richness$site == ardmore], as.numeric(low_richness$time)[low_richness$habitat == ardmore], method = "spearman")
+correlation_habitat2 <- cor(low_richness$low_richness[low_richness$site == kyles_of_bute], as.numeric(low_richness$time)[low_richness$habitat == "kyles_of_bute"], method = "spearman")
+correlation_habitat3 <- cor(low_richness$low_richness[low_richness$site == skye],as.numeric(low_richness$time)[low_richness$habitat == "skye"], method = "spearman")
+
+# Print correlation coefficients for each habitat
+print(paste("Spearman correlation coefficient for habitat 1:", correlation_habitat1))
+print(paste("Spearman correlation coefficient for habitat 2:", correlation_habitat2))
+print(paste("Spearman correlation coefficient for habitat 3:", correlation_habitat3))
+
+plot(low_richness$low_richness[low_richness$habitat == 3]~as.numeric(low_richness$time)[low_richness$habitat == 3])
 ### low freq diversity----
 low_richness <- read_excel("data/meta_richness.xlsx", 
                             sheet = "low_presence")
@@ -80,7 +138,7 @@ View(low_timeseries)
 low_timeseries$habitat<- as.factor(low_timeseries$habitat)
 
 #create subset of data
-df_low_habitat_time <- low_timeseries %>%
+low_habitat_time <- low_richnesss %>%
   group_by(time,habitat) %>%
   summarise(avg = mean(richness),
             sd = sd(richness),
@@ -91,11 +149,14 @@ df_low_habitat_time <- low_timeseries %>%
 low_meta$revised_habitat<- as.factor(low_meta$revised_habitat)
 
 #plot richness vs time
-ggplot(df_low_habitat_time, aes(x = time, y = avg, color = habitat)) +
-  geom_line() +  # Add lines
-  geom_point() +  # Add points
+low_richness$habitat<- as.factor(low_richness$habitat)
+ggplot(low_richness, aes(x = time, y = low_richness, color = habitat)) +
+  geom_smooth(se=T) +  # Add lines
   labs(x = "Time", y = "Average Richness", color = "Habitat Category") +  # Labels
-  theme_minimal()  # Optional: change theme if desired
+  theme_minimal() +  # Optional: change theme if desired 
+  geom_vline(xintercept = as.numeric(as.POSIXct("1899-12-31 04:30:00")), linetype = "dashed")  # Add vertical line
+
+
 ## Specpool to calculate richness----
 View(richness)
 colnames(richness)
