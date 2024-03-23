@@ -28,11 +28,20 @@ boxplot(low_richness$low_richness~low_richness$revised_habitat)
 #with the revised habitat, 1 has an even higher richness
 
 ### Max richness comparisons----
+##full band
 full_max_richness <- full_richness %>%
   group_by(site,habitat) %>%
   summarise(max_richness = mean(max_richness)) %>%
   ungroup()
 View(full_max_richness)
+
+##low band
+low_richness$max_richness<- as.numeric(low_richness$max_richness)
+low_max_richness <- low_richness %>%
+  group_by(site,habitat) %>%
+  summarise(max_richness = mean(max_richness)) %>%
+  ungroup()
+View(low_max_richness)
 ### low freq max richness ----
 low_meta <- read_excel("data/meta_richness.xlsx", 
                        sheet = "low_presence")
