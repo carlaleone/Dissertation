@@ -10,19 +10,14 @@ library(vegan)
 library(readxl)
 
 meta_richness <- read_excel("data/meta_richness.xlsx", 
-                            sheet = "big_sheet (2)")
+                            sheet = "big_sheet (3)")
 View(meta_richness)
 meta_richness$habitat<- as.factor(meta_richness$habitat)
 
 ## NMDS Total Richness----
 max_richness <- read_excel("data/meta_richness.xlsx", 
-                                       sheet = "RICHNESS")
+                                       sheet = "full_presence (2)")
 View(max_richness)
-
-### Delete unnecessary columns
-max_richness<- subset(max_richness, select = -c(cetacean,boat, water, avg_richness,max_richnes, sample_richness,high,low, high_low, samples) ) #remove unnecessary columnsc
-class(max_richness)
-str(max_richness)
 
 max_richness<- max_richness %>%
   column_to_rownames(var = "site") # make site the name of the rows
@@ -30,9 +25,10 @@ max_richness<- max_richness %>%
 
 ### Make separate for habitats
 habitats <- read_excel("data/meta_richness.xlsx", 
-                         sheet = "nmds_categories")
+                         sheet = "habitats")
 View(habitats)
 habitats$habitat<- as.factor(habitats$habitat)
+
 
 ### Distance matrix calculation
 sound_dist<- vegdist(presence_nmds, method="bray", binary= TRUE)
@@ -40,29 +36,44 @@ sound_dist
 
 ### NMDS
 richness_nmds<- metaMDS(max_richness, #the community data
-                    distance = "bray", # Using bray-curtis distance
+                    distance = "jaccard", # Using bray-curtis distance
                     try = 100)
+richness_nmds
+plot(richness_nmds)
+stressplot(richness_nmds)
 
 ### Plots
 ordihull(max_richness, # the nmds we created
          groups= habitats$habitat, #calling the groups from the mpa data frame we made
          draw = "polygon", # drawing polygons
-         col = 1:3, # shading the plygons
-         label = FALSE #removing labels from the plygons
+         col = 1:3, # shading the polygons
+         label = FALSE #removing labels from the polygons
 ) 
 
+### permanova
+#permanova
+dist_full_richness<- vegdist(max_richness, method="jaccard")
+perm_full_richness <- adonis2(dist_full_richness ~ habitat, data = habitats)
+
+summary(perm_low_richness)
+perm_full_richness
+#significant 
+
 ### SIMPER
-basic_simper<- simper(max_richness, #our community data set
+basic_simper<- simper(max_richness,
+                      distance= "jaccard",#our community data set
                       permutations = 999) # permutations to run
 
 summary(basic_simper , ordered = TRUE) #summary is the total contrast.
 
 habitat_simper<- simper(max_richness, 
                          habitats$habitat,
+                        distance= "jaccard",
                          permutations = 999)
 summary(habitat_simper)
 
-## NMDS Activity ---- 
+## NMDS Total Relative Abundance ----
+## NMDS Total Occurence ---- 
 # Load the data
 library(readxl)
 activity <- read_excel("data/meta_richness.xlsx", 
@@ -207,7 +218,8 @@ summary(habitat_simper)
 ## NMDS low richness ----
 nmds_low_activity_matrix<- read_excel("data/meta_richness.xlsx", 
                                       sheet = "low_presence")
-nmds_low_richness_matrix<- subset(nmds_low_richness_matrix, select = -c(simpsons,habitat, max_richness) ) #remove unnecessary columnsc
+View(nmds_low_activity_matrix)
+nmds_low_richness_matrix<- subset(nmds_low_activity_matrix, select = -c(simpsons,habitat, max_richness) ) #remove unnecessary columnsc
 
 nmds_low_richness_matrix<- nmds_low_richness_matrix %>%
   column_to_rownames(var = "site")
@@ -215,7 +227,7 @@ View(nmds_low_richness_matrix)
 
 ##nmds
 nmds_low_richness<-  metaMDS(nmds_low_richness_matrix, #the community data
-                                            distance = "bray",
+                                            distance = "jaccard",
                              autotransform = F,
                              # Using bray-curtis distance
                                             try = 300)
@@ -225,6 +237,15 @@ plot(nmds_low_richness)
 stressplot(nmds_low_richness)
 ordiplot(nmds_low_richness, type= "text")
 
+View(habitats)
+habitats<- subset(habitats, select= -c(boats,wind, animals ))
+
+#permanova
+dist_low_richness<- vegdist(nmds_low_richness_matrix, method="jaccard")
+perm_low_richness <- adonis2(dist_low_richness ~ habitat, data = habitats)
+
+summary(perm_low_richness)
+perm_low_richness
 
 ## adding habitat
 habitats <- read_excel("data/meta_richness.xlsx", 
@@ -288,23 +309,11 @@ habitats$habitat<- as.factor(habitats$habitat)
 
 # Try PERMANOVA
 dist_low_abundance<- vegdist(nmds_low_abundance_matrix, method="bray")
-perm_low_abundance <- adonis2(nmds_low_abundance_matrix ~ habitat, data = habitats, permutations = 999, method="bray")
+perm_low_abundance <- adonis2(dist_low_abundance ~ habitat, data = habitats)
 
+summary(perm_low_abundance)
 perm_low_abundance
 
-perm_low_abundance<- adonis2(
-  dist_low_abundance,
-  data,
-  permutations = 999,
-  method = "bray",
-  sqrt.dist = FALSE,
-  add = FALSE,
-  by = "terms",
-  parallel = getOption("mc.cores"),
-  na.action = na.fail,
-  strata = NULL,
-  ...
-)
 #simper
 basic_simper<- simper(nmds_low_abundance_matrix, #our community data set
                       permutations = 999) # permutations to run
@@ -327,6 +336,76 @@ ordihull(nmds_low_abundance_matrix, # the nmds we created
          col = 1:3, # shading the plygons
          label = FALSE #removing labels from the plygons
 ) 
+
+### low activity nmds----
+nmds_low_activity_matrix<- read_excel("data/meta_richness.xlsx", 
+                                       sheet = "low_activity")
+View(nmds_low_activity_matrix)
+nmds_low_activity_matrix<- subset(nmds_low_activity_matrix, select = -c(simpsons,habitat, max_richness) ) #remove unnecessary columnsc
+
+
+nmds_low_activity_matrix<- nmds_low_activity_matrix %>%
+  column_to_rownames(var = "site")
+View(nmds_low_abundance_matrix)
+
+##nmds
+nmds_low_activity<-  metaMDS(nmds_low_activity_matrix, #the community data
+                              distance = "bray",
+                              autotransform = T,
+                              # Using bray-curtis distance
+                              try = 300)
+
+nmds_low_activity
+plot(nmds_low_abundance)
+stressplot(nmds_low_activity)
+ordiplot(nmds_low_activity, type= "text")
+
+ordihull(nmds_low_abundance_matrix, # the nmds we created
+         groups= habitats$habitat, #calling the groups from the mpa data frame we made
+         draw = "polygon", # drawing polygons
+         col = 1:3, # shading the plygons
+         label = FALSE #removing labels from the plygons
+) 
+
+
+## adding habitat
+habitats <- read_excel("data/meta_richness.xlsx", 
+                       sheet = "habitats")
+View(habitats)
+habitats$habitat<- as.factor(habitats$habitat)
+
+# Try PERMANOVA
+dist_low_activity<- vegdist(nmds_low_activity_matrix, method="bray")
+perm_low_activity <- adonis2(dist_low_activity ~ habitat, data = habitats)
+
+summary(perm_low_abundance)
+perm_low_activity
+#significant
+
+
+#simper
+basic_simper<- simper(nmds_low_abundance_matrix, #our community data set
+                      permutations = 999) # permutations to run
+
+summary(basic_simper , ordered = TRUE) #summary is the total contrast.
+# none have significant p values, but highest ratio is the thump
+
+habitat_simper<- simper(nmds_low_abundance_matrix, 
+                        habitats$habitat,
+                        permutations = 999)
+summary(habitat_simper)
+# difference between 1-2 = knock
+# difference between 1-3 = croak and knock
+# difference between 2-3 = low long grunt
+
+##Plot
+ordihull(nmds_low_activity_matrix, # the nmds we created
+         groups= habitats$habitat, #calling the groups from the mpa data frame we made
+         draw = "polygon", # drawing polygons
+         col = 1:3, # shading the plygons
+         label = FALSE #removing labels from the plygons
+) 
+
 ## Richness vs time ----
 class(meta_richness$time)
 View(meta_richness)
