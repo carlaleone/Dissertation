@@ -6,7 +6,7 @@
 indices <- read_excel("data/results.clean.xlsx", 
                       sheet = "matched_times")
 phonic <- read_excel("data/meta_richness.xlsx", 
-                            sheet = "big_sheet (2)")
+                            sheet = "big_sheet (3)")
 
 View(indices)
 indices<- subset(indices, select = -c(long, lat) ) #remove unnecessary columns

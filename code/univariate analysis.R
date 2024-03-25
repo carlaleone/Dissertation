@@ -9,10 +9,10 @@ library(tidyverse)
 library(vegan)
 library(readxl)
 
-full_richness <- read_excel("data/meta_richness.xlsx", 
+full_richness <- read_excel("data/phonic_richness.xlsx", 
                             sheet = "big_sheet (3)")
-low_richness<- read_excel("data/meta_richness.xlsx", 
-                          sheet = "low_sheet (4)")
+low_richness<- read_excel("data/phonic_richness.xlsx", 
+                          sheet = "new_low_sheet")
 View(low_richness)
 full_richness$habitat<- as.factor(full_richness$habitat)
 full_richness$max_richness<- as.numeric(full_richness$max_richnes)
