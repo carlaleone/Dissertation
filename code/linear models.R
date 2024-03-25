@@ -5,24 +5,41 @@
 ## Load the data----
 indices <- read_excel("data/results.clean.xlsx", 
                       sheet = "matched_times")
-phonic <- read_excel("data/meta_richness.xlsx", 
+phonic <- read_excel("data/phonic_richness.xlsx", 
                             sheet = "big_sheet (3)")
 
 View(indices)
 indices<- subset(indices, select = -c(long, lat) ) #remove unnecessary columns
 
 # merge the datasets
+View(phonic)
+View(indices)
 indices <- indices %>%
   rename(minute = recording_minute)
-merged <- merge(indices, phonic, by = c("site", "minute"))
+phonic$wav_files <- paste(phonic$recording, phonic$minute, sep = "")
+merged <- merge(indices, phonic, by = c("site", "wav_files"))
 View(merged)                
 str(merged)
+
+### Data Exploration ----
+library(lme4)
+hist(merged$richness)
+lm1<- lm(richness~, data=merged)
+summary(lm1)
+
+lme1<- lmer(richness~ACI_low+ ACI_high +ACI_full +AEI_low +AEI_high +AEI_full+ BI_low +BI_high+ BI_full+ H_low+ H_high+ H_full+ TE_low+ TE_high+ TE_full +SE_low+ SE_high+ SE_full  +M_low+ M_high+ M_full+ NDSI + (1|site), data= merged )
+print(colnames(merged))
+
+
+
 ## Random Forest Attempt----
 install.packages("randomForest")
 library(randomForest)
 install.packages("caret")
 library(caret)
-
+library(readxl)
+library(tidyverse)
+library(vegan)
 library(datasets)
 data<- iris
 View(data)
@@ -41,8 +58,9 @@ View(merged3)
 
 #training
 set.seed(222)
-ind <- sample(2, nrow(merged3), replace = TRUE, prob = c(0.7, 0.3))
-train <- merged3[ind==1,] #65 values 
+ind <- sample(2, nrow(merged_habitats), replace = TRUE, prob = c(0.7, 0.3))
+train <- merged_habitats[ind==1,] #65 values 
+train
 test <- merged3[ind==2,] # 131 values
 
 #random forest
@@ -66,7 +84,7 @@ hist(treesize(rf),
      col = "green")
 
 #Variable Importance
-varImpPlot(rf,
+varImpPlot(rf1,
            sort = T,
            n.var = 10,
            main = "Top 10 - Variable Importance")
@@ -74,8 +92,126 @@ importance(rf)
 
 MDSplot(rf, train$richness)
 
+library(corrplot)
+?corrplot
+corrplot(cor(matrix_hab1_numeric))
+cor(matrix_hab1)
+matrix_hab1<- as.matrix(df_habitat_1)
+matrix_hab1<- subset(matrix_hab1, select = -c(richness))
+str(matrix_hab1)
+View(matrix_hab1_numeric)
+column_names <- matrix_hab1[1, ]
+
+matrix_hab1_numeric <- as.numeric(matrix_hab1)
+matrix_hab1 <- matrix_hab1[-1, ]
+colnames(matrix_hab1) <- column_names
+
 ### Try forest with low richness ----
-#193 observations of 67 variables
+str(merged)
+merged_habitats<- subset(merged, select = c(1, 4:24, 57,52))
+View(merged_habitats)
+## Split data into habitats
+# Data frame for habitat category 1
+df_habitat_1 <- merged_habitats %>%
+  filter(habitat.y == 1)%>%
+  na.omit()
+
+df_habitat_1$richness<- as.factor(df_habitat_1$richness)
+
+str(df_habitat_1)
+# training
+set.seed(222)
+ind1 <- sample(2, nrow(df_habitat_1), replace = TRUE, prob = c(0.7, 0.3))
+train1 <- df_habitat_1[ind==1,]  
+train1 <- na.omit(train1)
+test1 <- df_habitat_1[ind==2,] 
+test1<- na.omit(test1)
+train1
+#random forest
+rf1 <- randomForest(richness~., data=train1, proximity=TRUE) 
+print(rf)
+
+p1.1 <- predict(rf1, train1)
+confusionMatrix(p1.1, train1$ richness)
+
+# adjust the model because clearly has a lot of error
+t <- tuneRF(train[,-5], train[,5],
+            stepFactor = 0.5,
+            plot = TRUE,
+            ntreeTry = 150,
+            trace = TRUE,
+            improve = 0.05)
+
+# not super sure what this does but lets see
+hist(treesize(rf),
+     main = "No. of Nodes for the Trees",
+     col = "green")
+
+#Variable Importance
+varImpPlot(rf1,
+           sort = T,
+           n.var = 10,
+           main = "Top 10 - Variable Importance")
+importance(rf1)
+MDSplot(rf1, train1$richness)
+# checking correlations between the different variables
+View(merged_habitats)
+cor_habitats<- subset(merged_habitats, select = -c(site, habitat.y))
+library(corrplot)
+correlation_matrix <- cor(cor_habitats[, -ncol(merged_habitats)], df$richness)
+print(correlation_matrix)
+corrplot(correlation_matrix)
+
+# Data frame for habitat category 2
+df_habitat_2 <- merged_habitats %>%
+  filter(habitat.y == 2) %>%
+  select(-c(habitat.y, site))
+View(df_habitat_2)
+# training
+set.seed(222)
+ind2 <- sample(2, nrow(df_habitat_2), replace = TRUE, prob = c(0.7, 0.3))
+train2 <- df_habitat_2[ind==1,]  
+train2
+train2 <- na.omit(train2)
+test2 <- df_habitat_2[ind==2,] 
+test2<- na.omit(test2)
+
+#random forest
+rf2 <- randomForest(richness~., data=train2, proximity=TRUE) 
+print(rf2)
+
+p1.2 <- predict(rf2, train2)
+confusionMatrix(p1.2, train2$ richness)
+
+# adjust the model because clearly has a lot of error
+t <- tuneRF(train[,-5], train[,5],
+            stepFactor = 0.5,
+            plot = TRUE,
+            ntreeTry = 150,
+            trace = TRUE,
+            improve = 0.05)
+
+# not super sure what this does but lets see
+hist(treesize(rf),
+     main = "No. of Nodes for the Trees",
+     col = "green")
+
+#Variable Importance
+varImpPlot(rf2,
+           sort = T,
+           n.var = 10,
+           main = "Top 10 - Variable Importance")
+importance(rf)
+
+MDSplot(rf, train$richness)
+# Data frame for habitat category 3
+df_habitat_3 <- merged_habitats %>%
+  filter(habitat.y == 3)%>%
+  select(-c(habitat.y, site))
+View(df_habitat_1)
+
+
+#193 observations of 67 variables----
 merged7<- subset(merged, select = c(4:25, 52))
 View(merged7)
 
@@ -119,6 +255,7 @@ importance(rf)
 MDSplot(rf, train$richness)
 
 
+### RF with Habitats ----
 
 ## Try the random forest plot to predict simpsons instead of richness?----
 merged4<- subset(merged, select = c( 4:25, 59))

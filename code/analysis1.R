@@ -15,7 +15,7 @@ View(meta_richness)
 meta_richness$habitat<- as.factor(meta_richness$habitat)
 
 ## NMDS Full Presence----
-max_richness <- read_excel("data/meta_richness.xlsx", 
+max_richness <- read_excel("data/phonic_richness.xlsx", 
                                        sheet = "full_presence (2)")
 View(max_richness)
 max_richness<- subset(max_richness, select = -c(knock))
@@ -32,13 +32,13 @@ habitats$habitat<- as.factor(habitats$habitat)
 
 
 ### Distance matrix calculation
-sound_dist<- vegdist(presence_nmds, method="bray", binary= TRUE)
+sound_dist<- vegdist(max_richness, method="jaccard", binary= TRUE)
 sound_dist
 
 ### NMDS
 richness_nmds<- metaMDS(max_richness, #the community data
                     distance = "jaccard", # Using bray-curtis distance
-                    try = 100)
+                    try = 300)
 richness_nmds
 #stress = 0.099
 #distance = jaccard
@@ -46,7 +46,7 @@ plot(richness_nmds)
 stressplot(richness_nmds)
 
 ### Plots
-ordihull(max_richness, # the nmds we created
+ordihull(richness_nmds, # the nmds we created
          groups= habitats$habitat, #calling the groups from the mpa data frame we made
          draw = "polygon", # drawing polygons
          col = 1:3, # shading the polygons
@@ -87,7 +87,7 @@ plot(x1)
 
 
 ## NMDS Full Relative Abundance ----
-max_relative_abundance <- read_excel("data/meta_richness.xlsx", 
+max_relative_abundance <- read_excel("data/phonic_richness.xlsx", 
                            sheet = "full_relative_abundance (2)")
 View(max_relative_abundance)
 max_relative_abundance<- subset(max_relative_abundance, select = -c(knock))
@@ -105,14 +105,10 @@ habitats<- subset(habitats, select = -c(boats,wind, animals))
 habitats<- habitats %>%
   column_to_rownames(var = "site")
 
-## Distance matrix calculation
-sound_dist<- vegdist(presence_nmds, method="bray", binary= TRUE)
-sound_dist
-
 ### NMDS
-relative_abundance_nmds<- metaMDS(max_relative_abundance, #the community data
+relative_abundance_nmds<- metaMDS(dist_full_relative_abundance, #the community data
                         distance = "bray",# Using bray-curtis distance
-                        try = 100)
+                        try = 300)
 relative_abundance_nmds
 #stress = 0.0826
 #distance = bray
@@ -121,7 +117,7 @@ stressplot(relative_abundance_nmds)
 
 ### Plots
 
-ordihull(max_relative_abundance, # the nmds we created
+ordihull(relative_abundance_nmds, # the nmds we created
          groups= habitats$habitat, #calling the groups from the mpa data frame we made
          draw = "polygon", # drawing polygons
          col = 1:3, # shading the polygons
@@ -136,7 +132,7 @@ perm_full_relative_abundance <- adonis2(dist_full_relative_abundance ~ habitat, 
 pairwise1<- pairwise.adonis2(dist_full_relative_abundance ~ habitat, 
                  data =habitats, permutations = 999)
 perm_full_relative_abundance
-#not significant
+#not significant p = 0.182
 
 #significant 
 
@@ -158,7 +154,7 @@ summary(habitat_simper)
 ## NMDS Full Occurrence ---- 
 # Load the data
 library(readxl)
-full_occurrence <- read_excel("data/meta_richness.xlsx", 
+full_occurrence <- read_excel("data/phonic_richness.xlsx", 
                             sheet = "full_occurrence (2)")
 View(full_occurrence)
 full_occurrence<- subset(full_occurrence, select = -c(knock))
@@ -176,7 +172,7 @@ full_occurence_distance
 full_occurrence_nmds<- metaMDS(full_occurrence, #the community data
                       distance = "bray",
                k=2,# Using bray-curtis distance
-                      try = 100)
+                      try = 300)
 
 full_occurrence_nmds
 #stress = 0.0798
@@ -186,11 +182,19 @@ full_occurrence_nmds
 
 ### permanova
 #permanova
-dist_full_occurrence<- vegdist(max_relative_abundance, method="bray")
+dist_full_occurrence<- vegdist(full_occurrence, method="bray")
 perm_full_occurrence <- adonis2(full_occurrence ~ habitat, data = habitats)
 
 perm_full_occurrence
 # significant with a p value =. 0.009, f = 3.4561, df habitat =3, df resid =7, df total =9
+plot(full_occurrence_nmds)
+
+ordihull(full_occurrence_nmds, # the nmds we created
+         groups= habitats$habitat, #calling the groups from the mpa data frame we made
+         draw = "polygon", # drawing polygons
+         col = 1:3, # shading the plygons
+         label = FALSE #removing labels from the plygons
+) 
 
 
 ### SIMPER
@@ -265,16 +269,17 @@ ordiplot(nmds, type= "text")
 
 ## NMDS Low Relative Abundance ----
 # import the dataset
-low_relative_abundance <- read_excel("data/meta_richness.xlsx", 
+low_relative_abundance <- read_excel("data/phonic_richness.xlsx", 
                             sheet = "low_relative_abundance (2)")
 
-low_relative_abundance<- subset(low_relative_abundance, select = -c(max_richness, simpsons, habitat) ) #remove unnecessary columns
+low_relative_abundance<- subset(low_relative_abundance, select = -c(13) ) #remove unnecessary columns
 low_relative_abundance<- low_relative_abundance %>%
   column_to_rownames(var = "site")
 View(low_relative_abundance)
 # Make the nmds
 low_abundance_nmds<- metaMDS(low_relative_abundance, #the community data
-           distance = "bray",k=2, # Using bray-curtis distance
+           distance = "bray",
+           k=2, # Using bray-curtis distance
            try = 300)
 low_abundance_nmds
 # stress = 0.066
@@ -288,11 +293,11 @@ dist_low_abundance<- vegdist(low_relative_abundance, method="bray")
 perm_low_abundance <- adonis2(dist_low_abundance ~ habitat, data = habitats)
 
 perm_low_abundance
-#not significant , p = 0.365
+#not significant , p = 0.083
 
 
 ### Plots
-plot<- ordihull(abundance_nmds, # the nmds we created
+ordihull(low_abundance_nmds, # the nmds we created
          groups= habitats$habitat, #calling the groups from the mpa data frame we made
          draw = "polygon", # drawing polygons
          col = 1:3, # shading the plygons
@@ -312,10 +317,10 @@ summary(habitat_simper)
 
 
 ## NMDS Low presence ----
-low_presence<- read_excel("data/meta_richness.xlsx", 
+low_presence<- read_excel("data/phonic_richness.xlsx", 
                                       sheet = "low_presence (2)")
 View(low_presence)
-low_presence<- subset(low_presence, select = -c(simpsons,habitat, max_richness, knock) ) #remove unnecessary columnsc
+low_presence<- subset(low_presence, select = -c(habitat) ) #remove unnecessary columnsc
 
 low_presence<- low_presence %>%
   column_to_rownames(var = "site")
@@ -329,7 +334,7 @@ nmds_low_presence<-  metaMDS(low_presence, #the community data
                                             try = 300)
 
 nmds_low_presence
-# stress = 0.07
+# stress = 0.077
 plot(nmds_low_presence)
 stressplot(nmds_low_presence)
 ordiplot(nmds_low_presence, type= "text")
@@ -343,7 +348,7 @@ perm_low_presence <- adonis2(dist_low_presence ~ habitat, data = habitats)
 
 summary(perm_low_presence)
 perm_low_presence
-# not significant, p = 0.129
+# not significant, p = 0.525
 
 #simper
 basic_simper<- simper(low_presence, #our community data set
@@ -357,18 +362,18 @@ habitat_simper<- simper(nmds_low_richness_matrix,
 summary(habitat_simper)
 #plot
 plot.new()
-ordihull(low_richness, # NMDS results object
+ordihull(nmds_low_presence, # NMDS results object
          groups = habitats$habitat, # Grouping variable
          draw = "polygon", # Draw polygons
          col = 1:3, # Specify colors for polygons
          label = FALSE # Remove labels from polygons
 )
 
-## NMDS low abundance ----
-low_occurrence<- read_excel("data/meta_richness.xlsx", 
+## NMDS low Occurrence ----
+low_occurrence<- read_excel("data/phonic_richness.xlsx", 
                                       sheet = "low_activity (2)")
 View(low_occurrence)
-low_occurrence<- subset(low_occurrence, select = -c(habitat, simpsons, max_richness))
+low_occurrence<- subset(low_occurrence, select = -c(habitat))
 low_occurrence<- low_occurrence %>%
   column_to_rownames(var = "site")
 
@@ -407,7 +412,7 @@ perm_low_occurrence <- adonis2(low_occurrence ~ habitat, data = habitats)
 
 summary(perm_low_occurrence)
 perm_low_occurrence
-# not significant
+# is significant: 0.033 = p
 
 #simper
 basic_simper<- simper(nmds_low_abundance_matrix, #our community data set
@@ -416,11 +421,11 @@ basic_simper<- simper(nmds_low_abundance_matrix, #our community data set
 summary(basic_simper , ordered = TRUE) #summary is the total contrast.
 # none have significant p values, but highest ratio is the thump
 
-habitat_simper<- simper(nmds_low_abundance_matrix, 
+habitat_simper<- simper(dist_low_occurrence, 
                         habitats$habitat,
                         permutations = 999)
 summary(habitat_simper)
-# difference between 1-2 = knock
+w# difference between 1-2 = knock
 # difference between 1-3 = croak and knock
 # difference between 2-3 = low long grunt
 
@@ -432,7 +437,7 @@ ordihull(nmds_low_abundance_matrix, # the nmds we created
          label = FALSE #removing labels from the plygons
 ) 
 
-### low occurrence nmds----
+## low occurrence nmds----
 nmds_low_activity_matrix<- read_excel("data/meta_richness.xlsx", 
                                        sheet = "low_activity")
 View(nmds_low_activity_matrix)
