@@ -42,10 +42,14 @@ kw_full_max_richness #not sig, p=0.876
 
 
 ##low band
-low_richness$max_richness<- as.numeric(low_richness$max_richness)
+phonic_richness <- read_excel("data/phonic_richness.xlsx", 
+                              +     sheet = "new_low_sheet ")
+low_richness<- phonic_richness 
+View(low_richness)
+low_richness$max_richnes<- as.numeric(low_richness$max_richnes)
 low_max_richness <- low_richness %>%
   group_by(site,habitat) %>%
-  summarise(max_richness = mean(max_richness)) %>%
+  summarise(max_richness = mean(max_richnes)) %>%
   ungroup()
 View(low_max_richness)
 
@@ -72,8 +76,9 @@ kw_full_diversity
 ## low band
 low_diversity <- low_richness %>%
   group_by(site,habitat, revised_habitat) %>%
-  summarise(diversity = mean(simpsons)) %>%
+  summarise(diversity = mean(simpson)) %>%
   ungroup()
+View(low_diversity)
 boxplot(low_diversity$diversity~low_diversity$revised_habitat)
 
 boxplot(low_diversity$diversity~low_diversity$habitat)
@@ -81,6 +86,39 @@ kw_low_diversity<- kruskal.test(diversity~habitat, data=low_diversity)
 kw_low_diversity
 # very close to being significant : p= 0.077
 
+### Low Relative Abundance ----
+low_relative_abundance <- read_excel("data/phonic_richness.xlsx", 
+                                     +     sheet = "low_relative_abundance (2)")
+View(low_relative_abundance)
+low_relative_abundance$habitat<- as_factor(low_relative_abundance$habitat)
+low_relative_abundance<- subset(low_relative_abundance, select = -c(1))
+
+low_relative_abundance_means<- low_relative_abundance %>%
+  group_by(habitat)%>%
+  summarise_all(mean) %>%
+  ungroup()
+
+View(low_relative_abundance_means)
+#stdev and means of the relative abundance
+
+# Transpose the data frame
+low_relative_abundance2<- low_relative_abundance %>%
+  column_to_rownames(var = "habitat")
+
+df_transposed <- t(low_relative_abundance_means)
+View(df_transposed)
+df_transposed <- df_transposed[-1, ]
+# Calculate mean and standard deviation for each species
+df_summary <- df_transposed %>%
+  as.data.frame() %>%  # Convert back to data frame
+  summarise_all(list(mean = mean, sd = sd), na.rm = TRUE)
+
+# Print the summary
+print(df_summary)
+
+low_relative_abundance_means$rank <- rank(-df_transposed$ri ) 
+
+df$rank <- rank(-df$relative_abundance) 
 ### low freq max richness ----
 low_meta <- read_excel("data/meta_richness.xlsx", 
                        sheet = "low_presence")
@@ -94,7 +132,7 @@ kw_low_max_richness<- kruskal.test(max_richness~habitat, data=low_meta)
 kw_low_max_richness
 
 
-## Low Band Richness vs Time----
+### Low Band Richness vs Time----
 lm_lowrichness_time<- lm(low_richness ~ time+site, data=low_richness)
 plot(lm_lowrichness_time)
 summary(lm_lowrichness_time)
