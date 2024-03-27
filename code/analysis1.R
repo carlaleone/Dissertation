@@ -391,6 +391,7 @@ stressplot(nmds_low_abundance)
 ordiplot(nmds_low_occurrence, type= "text")
 ?ordiplot
 plot(nmds_low_occurrence)
+View(habitats)
 
 ordihull(nmds_low_occurrence, # the nmds we created
          groups= habitats$habitat, #calling the groups from the mpa data frame we made
