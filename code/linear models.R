@@ -120,13 +120,14 @@ colnames(matrix_hab1) <- column_names
 
 ### Try forest with low richness ----
 str(merged)
-merged_habitats<- subset(merged, select = c(1, 4:24, 57,52))
+merged_habitats<- subset(merged, select = c(1, 4:24, 66,57))
 View(merged_habitats)
+merged_habitats$low_richness<- as.factor(merged_habitats$low_richness...39)
 ## Split data into habitats
 # Data frame for habitat category 1
 df_habitat_1 <- merged_habitats %>%
   filter(habitat.y == 1)%>%
-  na.omit()
+  select(-c(habitat.y, site, low_richness...39))
 
 df_habitat_1$richness<- as.factor(df_habitat_1$richness)
 str(df_habitat_1)
@@ -137,7 +138,7 @@ train1 <- df_habitat_1[ind1==1,]
 test1 <- df_habitat_1[ind1==2,] 
 
 #random forest
-rf1 <- randomForest(richness~., data=train1, proximity=TRUE) 
+rf1 <- randomForest(low_richness~., data=train1, proximity=TRUE) 
 print(rf1)
 
 p1.1 <- predict(rf1, train1)
