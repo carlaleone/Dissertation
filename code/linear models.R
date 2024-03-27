@@ -308,7 +308,62 @@ MDSplot(rf, train$richness)
 
 
 ### RF with Habitats ----
+merged_cleaner<- subset(merged_habitats, select = -c(low_richness, low_richness...39))
+merged_cleaner$habitat.y<- as.factor(merged_cleaner$habitat.y)
+merged_avg<- merged_cleaner %>%
+  group_by(site, habitat.y)%>%
+  summarise_all(list(mean=mean)) %>%
+  ungroup()
 
+merged_avg<- subset(merged_avg, select = -c(site))
+merged_avg$habitat.y<- as.factor(merged_avg$habitat.y)
+str(merged_avg)
+#training
+library(randomForest)
+library(caret)
+set.seed(222)
+ind <- sample(2, nrow(merged_avg), replace = TRUE, prob = c(0.8, 0.2))
+train <- merged_avg[ind==1,] #65 values 
+test <- merged_avg[ind==2,] # 131 values
+
+
+levels(train$habitat.y)
+set.seed(71)
+rf_test<- randomForest(habitat.y~., data= merged_avg, importance= TRUE, proximity= TRUE)
+print(rf_test)
+#random forest
+?randomForest
+rf <- randomForest(habitat.y~., data=train, proximity=TRUE, ntree=1000, mtry= 2) 
+print(rf)
+plot(rf)
+
+p1 <- predict(rf, train)
+confusionMatrix(p1, train$ habitat.y)
+
+p2 <- predict(rf, test)
+confusionMatrix(p2, test$ habitat.y)
+
+
+# adjust the model because clearly has a lot of error
+t <- tuneRF(train[,-5], train[,5],
+            stepFactor = 0.5,
+            plot = TRUE,
+            ntreeTry = 150,
+            trace = TRUE,
+            improve = 0.05)
+
+# not super sure what this does but lets see
+hist(treesize(rf),
+     main = "No. of Nodes for the Trees",
+     col = "green")
+#what do the nodes mean?
+
+#Variable Importance
+varImpPlot(rf,
+           sort = T,
+           n.var = 10,
+           main = "Top 10 - Variable Importance")
+importance(rf)
 ## Try the random forest plot to predict simpsons instead of richness?----
 merged4<- subset(merged, select = c( 4:25, 59))
 merged4$habitat.y<- as.factor(merged4$habitat.y)
