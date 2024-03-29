@@ -555,6 +555,9 @@ ggplot(richness, aes(x = time, y = richness, color = habitat)) +
   labs(x = "Time", y = "Richness", color = "Habitat Category") +  # Labels
   theme_minimal()
 
-## Boat Presence ----
+## Clustering ----
+dist_low_presence<- vegdist(low_presence, method="jaccard")
+cluster <- hclust(dist_low_presence, method = "average", members = NULL)
+plot(cluster)
 
-
+?hclust

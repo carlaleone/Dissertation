@@ -7,8 +7,10 @@ library(readxl)
 library(tidyverse)
 indices <- read_excel("data/results.clean.xlsx", 
                       sheet = "matched_times")
+
 phonic <- read_excel("data/phonic_richness.xlsx", 
                             sheet = "big_sheet (3)")
+
 
 View(indices)
 indices<- subset(indices, select = -c(long, lat) ) #remove unnecessary columns
@@ -28,8 +30,12 @@ write.xlsx(merged, "merged.xlsx")
 ### Data Exploration ----
 library(lme4)
 hist(merged$richness)
-lm1<- lm(richness~, data=merged)
-summary(lm1)
+lm1<- lm(low_richness~habitat, data=merged)
+kw_lwrich<- kruskal.test(low_richness~habitat, data=merged)
+kw_lwrich
+kw_sunrise<- kruskal.test(low_richness~sunrise, data=merged)
+kw_sunrise
+
 
 lme1<- lmer(richness~ACI_low+ ACI_high +ACI_full +AEI_low +AEI_high +AEI_full+ BI_low +BI_high+ BI_full+ H_low+ H_high+ H_full+ TE_low+ TE_high+ TE_full +SE_low+ SE_high+ SE_full  +M_low+ M_high+ M_full+ NDSI + (1|site), data= merged )
 print(colnames(merged))
@@ -40,7 +46,8 @@ avg_richness<- merged %>%
             sd = sd(richness))%>%
   ungroup()
 View(avg_richness)
-boxplot(merged$richness~merged$habitat.y)
+boxplot(merged$low_richness~merged$habitat)
+boxplot(meta_richness$low_richness~meta_richness$habitat)
 boxplot(merged$low_richness...26~merged$habitat.y)
 boxplot(merged$richness~merged$habitat.y)
 merged$wind<- as.factor(merged$wind)
@@ -57,17 +64,10 @@ data<- iris
 View(data)
 
 str(merged)
-#193 observations of 67 variables
-merged2<- subset(merged, select = c(1, 4:25, 51))
-View(merged2)
-merged2<- merged2 %>%
-  column_to_rownames(var = "site")
-
-# dataset with only richness and the indices
-merged3<- subset(merged2, select = -c(site))
-merged3$richness<- as.factor(merged3$richness)
-View(merged3)
-
+library(readxl)
+merged <- read_excel("data/merged.xlsx", 
+                     sheet = "merged3")
+View(merged)
 #training
 set.seed(222)
 ind <- sample(2, nrow(merged_habitats), replace = TRUE, prob = c(0.7, 0.3))
@@ -120,29 +120,16 @@ colnames(matrix_hab1) <- column_names
 
 ### Try forest with low richness ----
 str(merged)
-merged_habitats<- subset(merged, select = c(1, 4:24, 66,57))
+merged_habitats<- subset(merged, select = c(1, 4:24,51,57))
 View(merged_habitats)
-merged_habitats$low_richness<- as.factor(merged_habitats$low_richness...39)
+merged_habitats$richness<- as.factor(merged_habitats$richness)
 ## Split data into habitats
 # Data frame for habitat category 1
 df_habitat_1 <- merged_habitats %>%
-  filter(habitat.y == 1)%>%
-  select(-c(habitat.y, site, low_richness...39))
+  filter(habitat == 1)%>%
+  select(-c(habitat, site))
 
 df_habitat_1$richness<- as.factor(df_habitat_1$richness)
-str(df_habitat_1)
-# training
-set.seed(222)
-ind1 <- sample(2, nrow(df_habitat_1), replace = TRUE, prob = c(0.7, 0.3))
-train1 <- df_habitat_1[ind1==1,]  
-test1 <- df_habitat_1[ind1==2,] 
-
-#random forest
-rf1 <- randomForest(low_richness~., data=train1, proximity=TRUE) 
-print(rf1)
-
-p1.1 <- predict(rf1, train1)
-confusionMatrix(p1.1, train1$ richness)
 
 # adjust the model because clearly has a lot of error
 t <- tuneRF(train[,-5], train[,5],
@@ -174,8 +161,8 @@ corrplot(correlation_matrix)
 
 # Data frame for habitat category 2
 df_habitat_2 <- merged_habitats %>%
-  filter(habitat.y == 2) %>%
-  select(-c(habitat.y, site))
+  filter(habitat == 2) %>%
+  select(-c(habitat, site))
 df_habitat_2$richness<- as.factor(df_habitat_2$richness)
 View(df_habitat_2)
 # training
@@ -188,6 +175,7 @@ test2 <- df_habitat_2[ind2==2,]
 test2<- na.omit(test2)
 
 #random forest
+ 
 rf2 <- randomForest(richness~., data=train2, proximity=TRUE) 
 print(rf2)
 
@@ -216,7 +204,21 @@ varImpPlot(rf2,
            n.var = 10,
            main = "Top 10 - Variable Importance")
 importance(rf2)
+ str(merged_habitats)
+ #trying with the top important variables
+df_habitat_2.2 <- merged_habitats %>%
+  filter(habitat == 2) %>%
+  select(-c(1, 2:8,10:12, 14:18, 20, 24,))
+df_habitat_2.2$richness<- as.factor(df_habitat_2.2$richness)
+View(df_habitat_2.2)
+# training
+set.seed(222)
+ind2 <- sample(2, nrow(df_habitat_2.2), replace = TRUE, prob = c(0.7, 0.3))
+train2 <- df_habitat_2.2[ind2==1,]  
+test2 <- df_habitat_2.2[ind2==2,] 
 
+rf.2.2<- randomForest(richness~., data=train2, proximity=TRUE) 
+print(rf.2.2)
 MDSplot(rf2, train2$richness)
 # Data frame for habitat category 3
 df_habitat_3 <- merged_habitats %>%
@@ -540,7 +542,7 @@ biplot(pca_indices)
 screeplot(pca_indices)
 # is it even worth it to use PC2?
 
-#ACI Low----
+# ACI Low----
 avg_aci_low <- merged %>%
   group_by(time,max_richness) %>%
   summarise(avg_aci = mean(ACI_low),
@@ -600,3 +602,30 @@ boxplot(merged$ACI_full~merged$habitat)
 lm_time<- lm(ACI_low~time + habitat, data=merged)
 summary(lm_time)
 plot(merged$ACI_low~merged)
+### Looking at all indices ----
+library(readxl)
+results_clean <- read_excel("data/results.clean.xlsx", 
+                            sheet = "results.clean")
+View(results_clean)
+str(results_clean)
+results_clean2<- subset(results_clean, select = c(2:24,26))
+results_clean2$site<- tolower(gsub(" ", "_", results_clean2$site))
+results_clean2$habitat<- as.factor(results_clean2$habitat)
+View(results_clean2)
+results_clean2<- results_clean2 %>%
+  group_by(site,habitat)%>%
+  summarise_all(list(mean=mean))%>%
+  ungroup()
+
+results_clean2<- results_clean2 %>%
+  column_to_rownames(var = "site")
+
+dist_indices<- vegdist(results_clean2, method="bray")
+cluster_indices<- hclust(dist_indices, method = "average", members = NULL)
+plot(cluster_indices)
+
+pca_indices<- prcomp(results_clean2, scale=TRUE)
+summary(pca_indices)
+screeplot(pca_indices)
+pca_indices
+biplot(pca_indices)
