@@ -380,7 +380,7 @@ low_occurrence<- low_occurrence %>%
 ##nmds
 nmds_low_occurrence<-  metaMDS(low_occurrence, #the community data
                              distance = "bray",
-                             autotransform = F,
+                             autotransform = T,
                              # Using bray-curtis distance
                              try = 300)
 
@@ -400,6 +400,19 @@ ordihull(nmds_low_occurrence, # the nmds we created
          label = FALSE #removing labels from the plygons
 ) 
 
+nmds_low_occurrence$points
+
+# Calculate convex hulls
+chulls <- as.data.frame(tapply(1:nrow(nmds_low_occurrence$points), habitats$habitat, function(i) {
+  hull_pts <- chull(nmds_low_occurrence$points[i, 1], nmds_low_occurrence$points[i, 2])
+  cbind(nmds_low_occurrence$points[i[hull_pts], ], Group = unique(habitats$habitat[i]))
+}))
+
+# Plot NMDS points and convex hulls
+ggplot() +
+geom_point (data = nmds_low_occurrence$points, aes(x = MDS1, y = MDS2)) +
+  geom_polygon(data = chulls, aes(group = habitat), fill = NA, color = "black") +
+  labs(title = "NMDS Plot with Convex Hulls", x = "MDS1", y = "MDS2")
 
 ## adding habitat
 habitats <- read_excel("data/meta_richness.xlsx", 

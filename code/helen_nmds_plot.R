@@ -9,7 +9,7 @@ library(vegan)
 
 NMDS_rich <- metaMDS(max_richness, distance = "bray", k = 2, trymax=300) #creates our ordination. Bray-Curtis distance is chosen because it is not affected by zero values. k represents the number of dimensions we want and is used to reduce stress.
 
-goodness(NMDS_rich)
+goodness(nmds_low_occurrence)
 stressplot(NMDS_rich)
 plot(NMDS_rich)
 
@@ -17,27 +17,27 @@ plot(NMDS_rich)
 # group = insects_trad_NMDS$Final_crop
 # 
 # # Create a vector of color values with same length as the vector of group values
-# unique(insects_trad_NMDS$Final_crop)
-# colors = group
+unique(habitats$habitat)
+colors = habitat
 # colors[colors=="WW"] <- "Red"
-# colors[colors=="WB"] <- "Blue"
-# colors[colors=="WOSR"] <- "Green"
-# colors[colors=="LI"] <- "Purple"
+colors[colors=="1"] <- "Blue"
+colors[colors=="3"] <- "Green"
+colors[colors=="2"] <- "Purple"
 # colors[colors=="SOSR"] <- "Orange"
 # colors[colors=="W B"] <- "Yellow"
 # 
-# ordiplot(NMDS, type = "n", cex.axis = 1.5, cex.lab=1.5)
+ordiplot(nmds_low_occurrence, type = "n", cex.axis = 1.5, cex.lab=1.5)
 # 
 # 
-# for(i in unique(group)) {
-#   ordihull(NMDS_invert$point[grep(i, group),], draw="polygon",
-#            groups = group[group == i],col = colors[grep(i,group)],label=F) } 
-# 
-# orditorp(NMDS_invert, display = "species", label=F, col = "Grey50", air = 0.01)
-# 
-# fit <- adonis2(insects_trad_NMDS[, -c(1:3)] ~ Crop_longname, insects_trad_NMDS, 
-#                permutations = 999, method = "bray")
-# fit
+for(i in unique(habitat)) {
+  ordihull(nmds_low_occurrence$point[grep(i, habit),], draw="polygon",
+         groups = group[habitat == i],col = colors[grep(i,habitat)],label=F) } 
+
+ orditorp(NMDS_invert, display = "species", label=F, col = "Grey50", air = 0.01)
+ 
+ fit <- adonis2(insects_trad_NMDS[, -c(1:3)] ~ Crop_longname, insects_trad_NMDS, 
+                permutations = 999, method = "bray")
+ fit
 
 
 # ggplot version - from https://chrischizinski.github.io/rstats/vegan-ggplot2/
