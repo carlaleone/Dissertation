@@ -310,10 +310,11 @@ MDSplot(rf, train$richness)
 
 
 ### RF with Habitats ----
-merged_cleaner<- subset(merged_habitats, select = -c(low_richness, low_richness...39))
-merged_cleaner$habitat.y<- as.factor(merged_cleaner$habitat.y)
+
+merged_cleaner<- subset(merged_habitats, select = -c(richness))
+merged_cleaner$habitat<- as.factor(merged_cleaner$habitat)
 merged_avg<- merged_cleaner %>%
-  group_by(site, habitat.y)%>%
+  group_by(site, habitat)%>%
   summarise_all(list(mean=mean)) %>%
   ungroup()
 
@@ -629,3 +630,6 @@ summary(pca_indices)
 screeplot(pca_indices)
 pca_indices
 biplot(pca_indices)
+
+
+                   

@@ -555,9 +555,68 @@ ggplot(richness, aes(x = time, y = richness, color = habitat)) +
   labs(x = "Time", y = "Richness", color = "Habitat Category") +  # Labels
   theme_minimal()
 
-## Clustering ----
+## Clustering presence ----
 dist_low_presence<- vegdist(low_presence, method="jaccard")
 cluster <- hclust(dist_low_presence, method = "average", members = NULL)
 plot(cluster)
 
 ?hclust
+## Clustering Indices? ----
+str(merged_habitats)
+str(merged_cluster)
+merged_cluster<- merged_avg %>%
+  select(-c(1,2))
+
+dist_indices<- vegdist(merged_cluster, method= "bray")
+cluster_indices<- hclust(dist_indices, method= "averag", member =NULL)
+plot(cluster_indices)
+## Richness vs diversity ----
+str(meta_richness)
+linear<- meta_richness%>%
+  group_by(site, habitat)%>%
+  summarise(richness = mean(max_richnes),
+            simpson = mean(simpson))%>%
+  ungroup()
+View(linear)
+linear$habitat<- as.factor(linear$habitat)
+
+ggplot(linear, aes(x = richness, y = simpson, color = habitat)) +
+  geom_point() + # Add points
+  geom_text(aes(label = site), vjust = -0.5) +
+  geom_smooth(aes(y=predictions), method = "lm", se=F, colour = "black") +
+  labs(x = "Site Maximum Number of Signal Types", y = "Simpson's Diversity (D)", color = "Habitat Complexity") +
+  theme_classic()
+
+predictions<- predict(lm_linear)
+lm_linear<- lm(simpson~richness, data=linear)
+plot(lm_linear)
+#doesnt meet the assumptions
+summary(lm_linear)
+correlation<- cor(linear$richness, linear$simpson, method = "spearman")
+print(correlation)
+#spearmans correlation is 0.8211, pretty good
+## Low Richness vs Low Diversity ---
+str(merged)
+linear_low<- subset(merged, select = c(1,66, 67,57))
+linear_low<- linear_low %>%
+  group_by(site, habitat)%>%
+  summarise(richness = mean(low_max_richness),
+            simpson = mean(low_simpson))%>%
+  ungroup()
+linear_low$habitat<- as.factor(linear_low$habitat)
+View(linear_low)
+lm_linear_low<- lm(simpson~richness, data=linear_low)
+summary(lm_linear_low)
+plot(lm_linear_low)
+# doesnt fit assumptions, lots of leverage and unqual variance
+correlation_low<- cor(linear_low$richness, linear_low$simpson, method = "spearman")
+print(correlation_low)
+#0.82
+predictions_low <- predict(lm_linear_low)
+#plot
+ggplot(linear_low, aes(x = richness, y = simpson, color = habitat)) +
+  geom_point() + # Add points
+  geom_text(aes(label = site), vjust = -0.5) +
+  geom_smooth(aes(y=predictions_low), method = "lm", se=F, colour = "black") +
+  labs(x = "Site Maximum Number of Signal Types", y = "Simpson's Diversity (D)", color = "Habitat Complexity") +
+  theme_classic()
