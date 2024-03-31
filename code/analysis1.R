@@ -24,26 +24,45 @@ max_richness<- max_richness %>%
   column_to_rownames(var = "site") # make site the name of the rows
 
 
-### Make separate for habitats
+## Make separate for habitats
 habitats <- read_excel("data/meta_richness.xlsx", 
                          sheet = "habitats")
 View(habitats)
-habitats$habitat<- as.factor(habitats$habitat)
-
+habitats$habitat<- as.factor(habitats$habitat) # make habitat a factor
+habitats<- subset(habitats, select= c(site, habitat)) #reduce the habitat data frame 
+max_richness_2<- merge(habitats, max_richness, by = c("site"))
 
 ### Distance matrix calculation
-sound_dist<- vegdist(max_richness, method="jaccard", binary= TRUE)
-sound_dist
+max_richness_dist<- vegdist(max_richness, method="jaccard")
+max_richness_dist
 
 ### NMDS
 richness_nmds<- metaMDS(max_richness, #the community data
                     distance = "jaccard", # Using bray-curtis distance
                     try = 300)
-richness_nmds
+scores(richness_nmds)
 #stress = 0.099
 #distance = jaccard
 plot(richness_nmds)
 stressplot(richness_nmds)
+
+###Table of results
+# Extract NMDS coordinates
+nmds_coordinates <- scores(richness_nmds)
+nrow(nmds_coordinates)
+
+# Convert coordinates to a data frame
+nmds_df <- as.data.frame(nmds_coordinates)
+
+
+# Add sample names (row names) to the data frame
+nmds_df$site <- rownames(nmds_df)
+
+# Optionally, you can rename the columns for clarity
+colnames(nmds_df) <- c("NMDS1", "NMDS2", "Sample")
+
+# Print or manipulate the resulting data frame as needed
+print(nmds_df)
 
 ### Plots
 ordihull(richness_nmds, # the nmds we created
@@ -61,9 +80,30 @@ perm_full_richness <- adonis2(dist_full_richness ~ habitat, data = habitats)
 summary(perm_full_richness)
 perm_full_richness
 #significant p = 0.017
-?pairwise.adonis()
-?adonis2()
-pairwise.adonis(dist_full_richness,habitats$habitat)
+# Load required libraries
+library(knitr)
+install.packages("kableExtra")
+library(kableExtra)
+
+# Assuming 'perm_full_richness' is your PERMANOVA result object
+
+# Extract relevant statistics from PERMANOVA results
+
+permanova_table <- data.frame(
+  "Source" = rownames(perm_full_richness$adonis),
+  "Df" = perm_full_richness$adonis$terms,
+  "SumsOfSqs" = perm_full_richness$adonis$terms,
+  "MeanSqs" = perm_full_richness$adonis$terms,
+  "F.Model" = perm_full_richness$adonis$terms,
+  "R2" = perm_full_richness$adonis$terms,
+  "Pr(>F)" = perm_full_richness$adonis$pvals
+)
+
+# Format the table using kable
+kable(permanova_table, format = "markdown")
+kable(permanova_table, format = "html") %>%
+  kable_styling() %>%
+  save_kable(file = "permanova_results_1.1.html")
 
 ### SIMPER
 basic_simper<- simper(max_richness,
