@@ -15,7 +15,8 @@ low_richness<- read_excel("data/phonic_richness.xlsx",
                           sheet = "new_low_sheet ")
 View(low_richness)
 full_richness$habitat<- as.factor(full_richness$habitat)
-full_richness$max_richness<- as.numeric(full_richness$max_richnes)
+View(full_richness)
+
 ### Richness by habitat ----
 ## Initial Boxplots 
 boxplot(full_richness$richness~full_richness$habitat)
@@ -28,12 +29,34 @@ boxplot(low_richness$low_richness~low_richness$revised_habitat)
 #with the revised habitat, 1 has an even higher richness
 
 ### Max richness comparisons----
-##full band
+str(full_richness)
 full_max_richness <- full_richness %>%
   group_by(site,habitat) %>%
-  summarise(max_richness = mean(max_richness)) %>%
+  summarise(max_richness = mean(full_max_richnes)) %>%
   ungroup()
+# maximum richness for each site and the habitat group
+full_max_richness_se<- full_max_richness%>%
+  group_by(habitat)%>%
+  summarise(mean=mean(max_richness),
+            sd = sd(max_richness)) %>%
+  ungroup()
+  
 View(full_max_richness)
+(max_richness_plot <- ggplot(full_max_richness, aes(x = habitat, y = max_richness, fill = habitat)) +
+    geom_bar() + 
+    theme_classic() +
+    scale_fill_manual(values = Colours) +
+    theme(axis.text.x = element_blank()))
+
+
+#violin plot
+(max_richness_plot <- ggplot(full_max_richness, aes(x = habitat, y = max_richness, fill = habitat))+
+    geom_violin()+
+    stat_summary(data=full_max_richness_se,fun.data = mean_se, geom = "point", color = "black", size = 3) +  # Add mean points
+    stat_summary(data= full_max_richness_se, fun.data = mean_se, geom = "errorbar", aes(ymax = mean + sd, ymin = mean - sd, width = 0.2)) +  # Add error bars for standard deviation
+    geom_jitter(color = "black", width = 0.2, alpha = 0.5) +
+    scale_fill_manual(values= Colours) +
+    theme_classic())
 
 #boxplots
 boxplot(full_max_richness$max_richness~full_max_richness$habitat)

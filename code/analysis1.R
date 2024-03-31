@@ -100,9 +100,9 @@ for(i in unique(group)) {
   (max_richness_nmds_plot <- ggplot() +
       geom_polygon(data=hull.data,aes(x=NMDS1,y=NMDS2,fill=grp,group=grp),alpha=0.30) +# add the convex hulls
       labs(fill = "Habitat Category") +
-      #geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),alpha=0.5) +  # add the species labels
+      geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size= 2, alpha=0.5) +  # add the species labels
       geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,colour=grp),size=3) + # add the point markers
-      geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label=site),size=3,vjust=0) +  # add the site labels
+      #geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label=site),size=3,vjust=0) +  # add the site labels
       scale_colour_manual(values=Colours) +
       scale_fill_manual(values=Colours) +
       # scale_x_continuous(limits = c(-1.4, 3), breaks = c(-1,0,1,2,3)) +
@@ -117,7 +117,7 @@ for(i in unique(group)) {
   
   
 
-###Table of results###habitatTable of results
+###Table of results
 # Extract NMDS coordinates
 nmds_coordinates <- scores(richness_nmds)
 nrow(nmds_coordinates)
