@@ -31,22 +31,93 @@ View(habitats)
 habitats$habitat<- as.factor(habitats$habitat) # make habitat a factor
 habitats<- subset(habitats, select= c(site, habitat)) #reduce the habitat data frame 
 max_richness_2<- merge(habitats, max_richness, by = c("site"))
+max_richness_2<- max_richness_2 %>%
+  column_to_rownames(var = "site")
+max_richness_2$habitat<- as.factor(max_richness_2$habitat)
 
 ### Distance matrix calculation
 max_richness_dist<- vegdist(max_richness, method="jaccard")
 max_richness_dist
 
 ### NMDS
-richness_nmds<- metaMDS(max_richness, #the community data
+richness_nmds<- metaMDS(max_richness_2[,-c(habitat)], #the community data
                     distance = "jaccard", # Using bray-curtis distance
                     try = 300)
+goodness(richness_nmds)
 scores(richness_nmds)
+View(max_richness_2)
+nrow(max_richness_2$habitat)
 #stress = 0.099
 #distance = jaccard
 plot(richness_nmds)
 stressplot(richness_nmds)
 
-###Table of results
+group = as.character(max_richness_2$habitat)
+unique(max_richness_2$habitat)
+colors = group
+colors[colors=="1"] <- "Green"
+colors[colors==2] <- "Purple"
+colors[colors==3] <- "Orange"
+
+ordiplot(richness_nmds, type = "n", cex.axis = 1.5, cex.lab=1.5)
+
+for(i in unique(group)) {
+ ordihull(richness_nmds$point[grep(i, group),], draw="polygon",
+       groups = group[group == i],col = colors[grep(i,group)],label=F) } 
+ 
+   orditorp(richness_nmds, display = "species", label=F, col = "Grey50", air = 0.01)
+  
+   fit <- adonis2(max_richness_2[, -c(1)] ~ habitat, max_richness_2, 
+                 permutations = 999, method = "jaccard")
+  fit
+  
+##needs to a be highlighted and run together
+  
+## Now to try in ggplot
+  # ggplot version - from https://chrischizinski.github.io/rstats/vegan-ggplot2/
+  Colours <- c( "#56B4E9", "#009E73", "#F0E442")
+  names(Colours) <- c("1", "2", "3")
+  Colours_darker <- darken(Colours, 0.4)
+  names(Colours_darker) <- c("1", "2", "3")
+  
+  data.scores <- as.data.frame(scores(richness_nmds)$sites)  #Using the scores function from vegan to extract the site scores and convert to a data.frame
+  data.scores$site <- rownames(data.scores)  # create a column of site names, from the rownames of data.scores
+  data.scores$grp <- max_richness_2$habitat  #  add the grp variable created earlier
+  View(data.scores)
+  
+  species.scores <- as.data.frame(scores(richness_nmds, "species"))  #Using the scores function from vegan to extract the species scores and convert to a data.frame
+  species.scores$species <- rownames(species.scores)  # create a column of species, from the rownames of species.scores
+  head(species.scores) 
+  # insect_cols_mansort$Corrected_name
+  
+  hull.data <- data.frame()
+  for(i in 1:length(unique(max_richness_2$habitat))){
+    temp <- data.scores[data.scores$grp == unique(max_richness_2$habitat)[i], ][chull(data.scores[data.scores$grp == 
+                                                                                                          unique(max_richness_2$habitat)[i], c("NMDS1", "NMDS2")]), ]
+    hull.data <- rbind(hull.data, temp)
+  }
+  
+  (max_richness_nmds_plot <- ggplot() +
+      geom_polygon(data=hull.data,aes(x=NMDS1,y=NMDS2,fill=grp,group=grp),alpha=0.30) +# add the convex hulls
+      labs(fill = "Habitat Category") +
+      #geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),alpha=0.5) +  # add the species labels
+      geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,colour=grp),size=3) + # add the point markers
+      geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label=site),size=3,vjust=0) +  # add the site labels
+      scale_colour_manual(values=Colours) +
+      scale_fill_manual(values=Colours) +
+      # scale_x_continuous(limits = c(-1.4, 3), breaks = c(-1,0,1,2,3)) +
+      # scale_y_continuous(limits = c(-1.4, 1.2), breaks = c(-1,-0.5,0, 0.5 ,1)) +
+      scale_x_continuous(limits = c(-0.7, 1.6), breaks = c(-0.5,0,0.5,1,1.5)) +
+      scale_y_continuous(limits = c(-0.7, 0.5), breaks = c(-0.5,-0.25,0,0.25,0.5)) +
+      #coord_equal() +
+      theme_classic() +
+      ggtitle("Broadband Presence/Absence") +
+      theme(plot.title = element_text(hjust = 0.5))+
+      guides(colour = FALSE))
+  
+  
+
+###Table of results###habitatTable of results
 # Extract NMDS coordinates
 nmds_coordinates <- scores(richness_nmds)
 nrow(nmds_coordinates)
@@ -80,32 +151,19 @@ perm_full_richness <- adonis2(dist_full_richness ~ habitat, data = habitats)
 summary(perm_full_richness)
 perm_full_richness
 #significant p = 0.017
-# Load required libraries
-library(knitr)
-install.packages("kableExtra")
-library(kableExtra)
 
-# Assuming 'perm_full_richness' is your PERMANOVA result object
+# dispersion
+?betadisper()
+permdisp_max_richness<- betadisper(dist_full_richness, habitat)
+plot(permdisp_max_richness)
+permdisp_max_richness
+?permutest.betadisper
+anova(permdisp_max_richness)
+pmod <- permutest(permdisp_max_richness, permutations = 99, pairwise = TRUE)
+pmod
+# p value is 0.97 which indicates that the dispersion is not significantly different between the groups. 
 
-# Extract relevant statistics from PERMANOVA results
-
-permanova_table <- data.frame(
-  "Source" = rownames(perm_full_richness$adonis),
-  "Df" = perm_full_richness$adonis$terms,
-  "SumsOfSqs" = perm_full_richness$adonis$terms,
-  "MeanSqs" = perm_full_richness$adonis$terms,
-  "F.Model" = perm_full_richness$adonis$terms,
-  "R2" = perm_full_richness$adonis$terms,
-  "Pr(>F)" = perm_full_richness$adonis$pvals
-)
-
-# Format the table using kable
-kable(permanova_table, format = "markdown")
-kable(permanova_table, format = "html") %>%
-  kable_styling() %>%
-  save_kable(file = "permanova_results_1.1.html")
-
-### SIMPER
+eNMDS### SIMPER
 basic_simper<- simper(max_richness,
                       distance= "jaccard",#our community data set
                       permutations = 999) # permutations to run
