@@ -774,8 +774,8 @@ ggplot(summary_data, aes(x = site, y = mean_abundance, fill = Species)) +
   scale_fill_manual(values = custom_palette) + 
   labs(title = "Relative Abundance by Site",
        x = "Site",
-       y = "Proportion",
-       fill = "Species") +
+       y = "Relative Abundance",
+       fill = "Sound Category") +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   facet_wrap(~habitat, scales = "free")
