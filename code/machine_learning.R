@@ -2,6 +2,29 @@
 # 30/03/2024
 # Carla Leone
 
+## Load the data and merge the indices with other information----
+#load packages
+library(randomForest)
+library(caret)
+
+indices <- read_excel("data/results.clean.xlsx", 
+                      sheet = "matched_times")
+
+phonic <- read_excel("data/phonic_richness.xlsx", 
+                     sheet = "big_sheet (3)")
+
+
+View(indices)
+indices<- subset(indices, select = -c(long, lat) ) #remove unnecessary columns
+
+# merge the datasets
+View(phonic)
+View(indices)
+indices <- indices %>%
+  rename(minute = recording_minute)
+phonic$wav_files <- paste(phonic$recording, phonic$minute, sep = "")
+merged <- merge(indices, phonic, by = c("site", "wav_files"))
+
 ## Ben Williams: UMAP ----
 install.packages("umap")
 library(umap)
@@ -166,7 +189,7 @@ importance(rf_test)
 
 ## Random forest for habitat with all data ----
 str(merged)
-classify<- subset(merged, select = c(3:24, 28,57))
+classify<- subset(merged, select = c(3:24,57))
 classify$habitat<- as.factor(classify$habitat)
 str(classify)
 
@@ -174,9 +197,10 @@ str(classify)
 set.seed(222)
 ind_class <- sample(2, nrow(classify), replace = TRUE, prob = c(0.6, 0.4))
 train_class <- classify[ind_class==1,]
-test_class <- classify[ind_class==2,] # 131 values
+test_class <- classify[ind_class==2,] 
 
 View(train)
+View(classify)
 
 rf_test_class<- randomForest(habitat~., data= classify, importance= TRUE, proximity= TRUE)
 print(rf_test_class)
@@ -184,11 +208,20 @@ plot(rf_test_class)
 
 p1 <- predict(rf_test_class, train_class)
 confusionMatrix(p1, train_class$ habitat)
+p1
 
 p2 <- predict(rf_test_class, test_class)
 confusionMatrix(p2, test_class$ habitat)
+p2
+?confusionMatrix
+table(p2, test_class$ habitat)
 
 varImpPlot(rf_test_class,
            sort = T,
-           n.var = 10,
-           main = "Top 10 - Variable Importance")
+           n.var = 12,
+           main = "Variable Importance")
+
+partialPlot(rf_test_class, classify, M_high)
+
+classify$M_high<- unlist(classify$M_high)
+classify$habitat<- unlist(classify$habitat)

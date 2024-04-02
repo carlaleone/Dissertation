@@ -89,6 +89,7 @@ t <- tuneRF(train[,-5], train[,5],
             ntreeTry = 150,
             trace = TRUE,
             improve = 0.05)
+?tuneRF
 
 # not super sure what this does but lets see
 hist(treesize(rf),
