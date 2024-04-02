@@ -195,7 +195,7 @@ str(classify)
 
 # training
 set.seed(222)
-ind_class <- sample(2, nrow(classify), replace = TRUE, prob = c(0.6, 0.4))
+ind_class <- sample(2, nrow(classify), replace = TRUE, prob = c(0.4, 0.6))
 train_class <- classify[ind_class==1,]
 test_class <- classify[ind_class==2,] 
 
