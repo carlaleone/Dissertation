@@ -218,8 +218,8 @@ table(p2, test_class$ habitat)
 
 varImpPlot(rf_test_class,
            sort = T,
-           n.var = 12,
-           main = "Variable Importance")
+           n.var = 10,
+           main = "Top 10 Variable Importance")
 
 partialPlot(rf_test_class, classify, M_high)
 
