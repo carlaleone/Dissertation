@@ -706,7 +706,7 @@ summary(lm_linear)
 correlation<- cor(linear$richness, linear$simpson, method = "spearman")
 print(correlation)
 #spearmans correlation is 0.8211, pretty good
-## Low Richness vs Low Diversity ---
+## Low Richness vs Low Diversity ----
 str(merged)
 linear_low<- subset(merged, select = c(1,66, 67,57))
 linear_low<- linear_low %>%
@@ -731,3 +731,51 @@ ggplot(linear_low, aes(x = richness, y = simpson, color = habitat)) +
   geom_smooth(aes(y=predictions_low), method = "lm", se=F, colour = "black") +
   labs(x = "Site Maximum Number of Signal Types", y = "Simpson's Diversity (D)", color = "Habitat Complexity") +
   theme_classic()
+
+## Plotting relative abundance ----
+library(ggplot2)
+# first make correct dataset. Need column for sound, relative abundance, site, and habitat
+low_relative_abundance <- read_excel("data/phonic_richness.xlsx", 
+                                     sheet = "low_relative_abundance (2)")
+low_relative_abundance<- subset(low_relative_abundance, select = -c(...14, ...15, ...16, ...17))
+low_rel_abund_sum<- long_data %>%
+  group_by(habitat, site) %>%
+  summarise_all(list(mean=mean,
+                     sd=sd))%>%
+  ungroup()
+View(long_data)
+long_data <- gather(low_relative_abundance, key = "Species", value = "RelativeAbundance", -c(site, habitat))
+
+summary_data <- long_data %>%
+  group_by(Species, site, habitat) %>%
+  summarise(mean_abundance = mean(RelativeAbundance),
+            se_abundance = sd(RelativeAbundance) / sqrt(n())) %>%
+  ungroup()
+
+# Plot
+ggplot(summary_data, aes(x = Species, y = mean_abundance, fill = Species)) +
+  geom_bar(stat = "identity") +
+  geom_errorbar(aes(ymin = mean_abundance - se_abundance, ymax = mean_abundance + se_abundance), width = 0.4) +
+  facet_wrap(~ habitat, scales = "free") +
+  theme_classic() +
+  labs(title = "Average Relative Abundance of Species by Habitat",
+       x = "Species",
+       y = "Average Relative Abundance",
+       fill = "Species") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# trying proportional fill
+## colours
+custom_palette <- c("#A6CEE3", "#1F78B4", "#B2DF8A", "#33A02C", "#FB9A99", "#E31A1C",
+                    "#FDBF6F", "#FF7F00", "#CAB2D6", "#6A3D9A", "#FFFF99", "#B15928", "#8DD3C7")
+
+ggplot(summary_data, aes(x = site, y = mean_abundance, fill = Species)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = custom_palette) + 
+  labs(title = "Relative Abundance by Site",
+       x = "Site",
+       y = "Proportion",
+       fill = "Species") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_wrap(~habitat, scales = "free")

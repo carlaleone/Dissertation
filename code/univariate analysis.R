@@ -41,7 +41,7 @@ full_max_richness_se<- full_max_richness%>%
             sd = sd(max_richness)) %>%
   ungroup()
   
-View(full_max_richness)
+View(full_max_richness_se)
 (max_richness_plot <- ggplot(full_max_richness, aes(x = habitat, y = max_richness, fill = habitat)) +
     geom_bar() + 
     theme_classic() +
@@ -62,6 +62,20 @@ View(full_max_richness)
 boxplot(full_max_richness$max_richness~full_max_richness$habitat)
 kw_full_max_richness<- kruskal.test(max_richness~habitat, data=full_max_richness)
 kw_full_max_richness #not sig, p=0.876
+
+#bar plot
+(growth_barplot <- ggplot(growth_rates_overall, aes(x = treatment, y = mean_growth_rate, fill = treatment)) +
+    geom_bar(stat = "identity", position = 'dodge') +
+    geom_errorbar(aes(ymin = mean_growth_rate - growth_rate_error, ymax = mean_growth_rate + growth_rate_error), 
+                  position = position_dodge(width = 0.9), width = 0.25) +
+    theme_classic() +
+    geom_point(data = growth_rates_overall_sample, aes(x = treatment, y = overall_growth_rate), position = position_dodge(width = 0.9), color = "black", size = 2) +
+    labs(
+      x = "Treatment",
+      y = "Mean Growth Rate") +
+    scale_y_continuous(limits = c(-0.1, 0.4)) +
+    scale_fill_manual(values = custom_colors) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 ##low band
@@ -351,3 +365,6 @@ ggplot(df_avg_ratios, aes(x = time, y = avg_ratio, color = habitat)) +
 ### Try a model----
 lm_ratios<- lm(invert_dominance~time + habitat, data = ratios)
 summary(lm_ratios)
+
+### Total abundance of each sound ----
+
