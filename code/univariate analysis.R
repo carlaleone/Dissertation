@@ -2,7 +2,7 @@
 # 12/03/2024
 # Carla Leone
 
-## Install packages and load data ----
+### Install packages and load data ----
 install.packages("tidyverse")
 install.packages("vegan")
 library(tidyverse)
@@ -34,6 +34,16 @@ full_max_richness <- full_richness %>%
   group_by(site,habitat) %>%
   summarise(max_richness = mean(full_max_richnes)) %>%
   ungroup()
+View(full_max_richness)
+
+#Stats test
+lm_full_richness<- aov(log(max_richness)~habitat, data= full_max_richness)
+hist(sqrt(full_max_richness$max_richness))
+plot(lm_full_richness)
+
+kw_full_richness<- kruskal.test(max_richness~habitat, data=full_max_richness)
+kw_full_richness
+
 # maximum richness for each site and the habitat group
 full_max_richness_se<- full_max_richness%>%
   group_by(habitat)%>%
@@ -101,20 +111,28 @@ kw_low_max_richness
 ## full band
 full_diversity <- full_richness %>%
   group_by(site,habitat, revised_habitat) %>%
-  summarise(diversity = mean(simpson)) %>%
+  summarise(diversity = mean(full_simpson)) %>%
   ungroup()
 View(full_diversity)
+full_diversity$habitat<- as.factor(full_diversity$habitat)
 boxplot(full_diversity$diversity~full_diversity$habitat)
 boxplot(full_diversity$diversity~full_diversity$revised_habitat)
+hist(sqrt(full_diversity$diversity))
+lm_div<- aov(sqrt(diversity)~habitat, data= full_diversity)
+plot(lm_div)
+
+shapiro.test(full_diversity$diversity~full_diversity$habitat)
+?shapiro.test
 kw_full_diversity<- kruskal.test(diversity~habitat, data=full_diversity)
 kw_full_diversity
 # not significant 
 
 ## low band
-low_diversity <- low_richness %>%
-  group_by(site,habitat, revised_habitat) %>%
-  summarise(diversity = mean(simpson)) %>%
+low_diversity <- merged %>%
+  group_by(site,habitat) %>%
+  summarise(diversity = mean(low_simpson)) %>%
   ungroup()
+  
 View(low_diversity)
 boxplot(low_diversity$diversity~low_diversity$revised_habitat)
 
@@ -159,7 +177,17 @@ df$rank <- rank(-df$relative_abundance)
 ### low freq max richness ----
 low_meta <- read_excel("data/meta_richness.xlsx", 
                        sheet = "low_presence")
-View(low_meta)
+View(merged)
+low_richness <- merged %>%
+  group_by(site,habitat)%>%
+  summarise(max_richnes = mean(low_max_richness))%>%
+  ungroup()
+View(low_richness)
+hist(log(low_richness$max_richnes))
+
+kruskal_low_max_richness<- kruskal.test(max_richnes~habitat, data= low_richness)
+kruskal_low_max_richness
+
 boxplot(low_meta$max_richness~low_meta$habitat)
 
 aov_max_richness<- aov(max_richness~habitat, data=low_meta)
@@ -231,16 +259,6 @@ ggplot(low_richness, aes(x = time, y = low_richness, color = habitat)) +
   theme_minimal() +  # Optional: change theme if desired 
   geom_vline(xintercept = as.numeric(as.POSIXct("1899-12-31 04:30:00")), linetype = "dashed")  # Add vertical line
 
-
-## Specpool to calculate richness----
-View(richness)
-colnames(richness)
-richness_specpool<-  subset(richness, select = -c(recording,time, minute,boat, water, richness,max_richnes,max_richness, samples,invert,fish, ...33,invert_dominance, samples, habitat) )
-View(richness_specpool)
-richness_specpool<- richness_specpool %>%
-  column_to_rownames(var = "site")
-richness_specpool <- sapply(richness_specpool, as.numeric)
-specpool(richness_specpool, site, smallsample=TRUE)
 
 ## Add column for habitat ----
 low_richness <- low_richness %>%
@@ -344,4 +362,25 @@ ratios <- ratios %>%
 View(ratios)
 
 #plot the ratio over time for each habitat
-df_avg_ratios <- 
+df_avg_ratios <- ratios %>%
+  group_by(time,habitat) %>%
+  summarise(avg_ratio = mean(invert_dominance),
+            sd_ratio = sd(invert_dominance),
+            se_ratio = sd(invert_dominance) /sqrt(n()))%>%
+  ungroup()#gives the stats for each habitat at each time point. Has taken the average richness of each habitat for each time.
+
+
+View(df_avg_ratios)
+df_avg_ratios[is.na(df_avg_ratios)] <- 0
+
+### Plot by habitat
+ggplot(df_avg_ratios, aes(x = time, y = avg_ratio, color = habitat)) +
+  geom_line() +  # Add lines
+  geom_point() +  # Add points
+  labs(x = "Time", y = "Average Richness", color = "Habitat Category") +  # Labels
+  theme_minimal()  # Optional: change theme if desired
+
+
+
+
+
