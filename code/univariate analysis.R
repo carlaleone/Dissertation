@@ -30,13 +30,34 @@ boxplot(low_richness$low_richness~low_richness$revised_habitat)
 
 ### Max richness comparisons----
 str(full_richness)
-full_max_richness <- full_richness %>%
+#summary for only maximum richness of broadband
+summary_full_richness <- full_richness %>%
   group_by(site,habitat) %>%
-  summarise(max_richness = mean(full_max_richnes)) %>%
+  summarise(mean_value = mean(full_max_richnes)) %>%
   ungroup()
-View(full_max_richness)
+summary_full_richness$habitat<- as.factor(summary_full_richness$habitat) #habitat as the factor
 
-#Stats test
+#summary stats for the plot
+summary<- summary_full_richness  %>%
+  group_by(habitat) %>%
+  summarise(mean_value = mean(mean_value)) %>%
+  ungroup()
+View(summary)
+summary$se<- c(1.1547, 0.6667, 0.8539)
+
+##GGPLOT
+full_richness_bar<- ggplot(summary, aes(x = habitat, y = mean_value)) +
+  geom_bar(stat = "identity", position= 'dodge', fill = Colours, alpha = 0.6) +
+  geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2, color = "black", position = position_dodge(width = 0)) +
+  geom_point(data = summary_full_richness, aes(y = mean_value), color = "red", size = 3, position = position_dodge(width = 0)) +
+  #geom_text(aes(label = sprintf("%.2f", mean_value)), vjust = -0.5, color = "black", size = 3, position = position_dodge(width = 0.5)) +
+  labs(y = "Mean Phonic Richness", x = "Habitat Complexity Category") +
+  theme_classic() +
+  scale_fill_manual(values = Colours, name = "Habitat Category")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+
+##Stats tests for broadband richness
 lm_full_richness<- aov(log(max_richness)~habitat, data= full_max_richness)
 hist(sqrt(full_max_richness$max_richness))
 plot(lm_full_richness)
@@ -44,67 +65,11 @@ plot(lm_full_richness)
 kw_full_richness<- kruskal.test(max_richness~habitat, data=full_max_richness)
 kw_full_richness
 
-# maximum richness for each site and the habitat group
-full_max_richness_se<- full_max_richness%>%
-  group_by(habitat)%>%
-  summarise(mean=mean(max_richness),
-            sd = sd(max_richness)) %>%
-  ungroup()
-  
-View(full_max_richness_se)
-(max_richness_plot <- ggplot(full_max_richness, aes(x = habitat, y = max_richness, fill = habitat)) +
-    geom_bar() + 
-    theme_classic() +
-    scale_fill_manual(values = Colours) +
-    theme(axis.text.x = element_blank()))
-
-
-#violin plot
-(max_richness_plot <- ggplot(full_max_richness, aes(x = habitat, y = max_richness, fill = habitat))+
-    geom_violin()+
-    stat_summary(data=full_max_richness_se,fun.data = mean_se, geom = "point", color = "black", size = 3) +  # Add mean points
-    stat_summary(data= full_max_richness_se, fun.data = mean_se, geom = "errorbar", aes(ymax = mean + sd, ymin = mean - sd, width = 0.2)) +  # Add error bars for standard deviation
-    geom_jitter(color = "black", width = 0.2, alpha = 0.5) +
-    scale_fill_manual(values= Colours) +
-    theme_classic())
 
 #boxplots
 boxplot(full_max_richness$max_richness~full_max_richness$habitat)
 kw_full_max_richness<- kruskal.test(max_richness~habitat, data=full_max_richness)
 kw_full_max_richness #not sig, p=0.876
-
-#bar plot
-(growth_barplot <- ggplot(growth_rates_overall, aes(x = treatment, y = mean_growth_rate, fill = treatment)) +
-    geom_bar(stat = "identity", position = 'dodge') +
-    geom_errorbar(aes(ymin = mean_growth_rate - growth_rate_error, ymax = mean_growth_rate + growth_rate_error), 
-                  position = position_dodge(width = 0.9), width = 0.25) +
-    theme_classic() +
-    geom_point(data = growth_rates_overall_sample, aes(x = treatment, y = overall_growth_rate), position = position_dodge(width = 0.9), color = "black", size = 2) +
-    labs(
-      x = "Treatment",
-      y = "Mean Growth Rate") +
-    scale_y_continuous(limits = c(-0.1, 0.4)) +
-    scale_fill_manual(values = custom_colors) +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-
-##low band
-phonic_richness <- read_excel("data/phonic_richness.xlsx", 
-                              +     sheet = "new_low_sheet ")
-low_richness<- phonic_richness 
-View(low_richness)
-low_richness$max_richnes<- as.numeric(low_richness$max_richnes)
-low_max_richness <- low_richness %>%
-  group_by(site,habitat) %>%
-  summarise(max_richness = mean(max_richnes)) %>%
-  ungroup()
-View(low_max_richness)
-
-#boxplots
-boxplot(low_max_richness$max_richness~low_max_richness$habitat)
-kw_low_max_richness<- kruskal.test(max_richness~habitat, data= low_max_richness)
-kw_low_max_richness
-#not significant, but given the plots looks like 2 is far lower
 
 
 ### Diversity Comparisons ----
@@ -175,14 +140,15 @@ low_relative_abundance_means$rank <- rank(-df_transposed$ri )
 
 df$rank <- rank(-df$relative_abundance) 
 ### low freq max richness ----
-low_meta <- read_excel("data/meta_richness.xlsx", 
-                       sheet = "low_presence")
 View(merged)
+#subset of max richness per site for low band sounds
 low_richness <- merged %>%
   group_by(site,habitat)%>%
   summarise(max_richnes = mean(low_max_richness))%>%
   ungroup()
 View(low_richness)
+
+#stats
 hist(log(low_richness$max_richnes))
 
 kruskal_low_max_richness<- kruskal.test(max_richnes~habitat, data= low_richness)
@@ -196,6 +162,23 @@ summary(aov_max_richness)
 kw_low_max_richness<- kruskal.test(max_richness~habitat, data=low_meta)
 kw_low_max_richness
 
+##GGPLOT
+summary_low_richness<- low_richness%>%
+  group_by(habitat) %>%
+  summarise(mean_value = mean(max_richnes)) %>%
+  ungroup()
+summary_low_richness$se<- c(1.1547, 0.6667, 0.8539) #calculated from excel as sd/sqrt(n())
+#summary stats done
+
+ggplot(summary_low_richness, aes(x = habitat, y = mean_value)) +
+  geom_bar(stat = "identity", position= 'dodge', fill = Colours, alpha = 0.6) +
+  geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2, color = "black", position = position_dodge(width = 0)) +
+  geom_point(data = low_richness, aes(y =max_richnes), color = "red", size = 3, position = position_dodge(width = 0)) +
+  #geom_text(aes(label = sprintf("%.2f", mean_value)), vjust = -0.5, color = "black", size = 3, position = position_dodge(width = 0.5)) +
+  labs(y = "Mean Phonic Richness", x = "Habitat Complexity Category") +
+  theme_classic() +
+  scale_fill_manual(values = Colours, name = "Habitat Category")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 
 ### Low Band Richness vs Time----
 lm_lowrichness_time<- lm(low_richness ~ time+site, data=low_richness)

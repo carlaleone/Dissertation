@@ -145,7 +145,7 @@ ordihull(richness_nmds, # the nmds we created
 
 ### permanova
 #permanova
-dist_full_richness<- vegdist(max_richness, method="jaccard")
+dist_full_richness<- vegdist(max_richness, method="jaccard", binary = TRUE)
 perm_full_richness <- adonis2(dist_full_richness ~ habitat, data = habitats)
 
 summary(perm_full_richness)
@@ -261,27 +261,31 @@ full_occurrence<- subset(full_occurrence, select = -c(knock))
 # make the sites the row names
 full_occurrence<- full_occurrence %>%
 column_to_rownames(var = "site")
+str(full_occurrence)
+
+full_abundance<- full_occurrence[, 1:16] <- full_occurrence[, 1:16] * 13
+View(full_abundance)
 
 # calculating distances
-full_occurence_distance<- vegdist(full_occurrence, method="bray")
+full_occurence_distance<- vegdist(full_abundance, method="bray")
 full_occurence_distance
 
 # make the nmds
-full_occurrence_nmds<- metaMDS(full_occurrence, #the community data
+full_occurrence_nmds<- metaMDS(full_abundance, #the community data
                       distance = "bray",
                k=2,# Using bray-curtis distance
                       try = 300)
 
 full_occurrence_nmds
-#stress = 0.0798
-# method of distance is bray curtis
+#stress = 0.074
+# method of distance is bray curtis dissimilarity
 
 
 
 ### permanova
 #permanova
-dist_full_occurrence<- vegdist(full_occurrence, method="bray")
-perm_full_occurrence <- adonis2(full_occurrence ~ habitat, data = habitats)
+dist_full_occurrence<- vegdist(full_abundance, method="bray")
+perm_full_occurrence <- adonis2(dist_full_occurrence ~ habitat, data = habitats)
 
 perm_full_occurrence
 # significant with a p value =. 0.009, f = 3.4561, df habitat =3, df resid =7, df total =9
@@ -427,8 +431,6 @@ View(low_presence)
 ##nmds
 nmds_low_presence<-  metaMDS(low_presence, #the community data
                                             distance = "jaccard",
-                             autotransform = F,
-                             # Using bray-curtis distance
                                             try = 300)
 
 nmds_low_presence
@@ -474,9 +476,11 @@ View(low_occurrence)
 low_occurrence<- subset(low_occurrence, select = -c(habitat))
 low_occurrence<- low_occurrence %>%
   column_to_rownames(var = "site")
+str(low_occurrence)
+low_abundance<- low_occurrence[, 1:12] <- low_occurrence[, 1:12] * 13
 
 ##nmds
-nmds_low_occurrence<-  metaMDS(low_occurrence, #the community data
+nmds_low_occurrence<-  metaMDS(low_abundance, #the community data
                              distance = "bray",
                              autotransform = T,
                              # Using bray-curtis distance
@@ -520,7 +524,7 @@ habitats$habitat<- as.factor(habitats$habitat)
 
 # Try PERMANOVA
 dist_low_occurrence<- vegdist(low_occurrence, method="bray")
-perm_low_occurrence <- adonis2(low_occurrence ~ habitat, data = habitats)
+perm_low_occurrence <- adonis2(low_abundance ~ habitat, data = habitats)
 
 summary(perm_low_occurrence)
 perm_low_occurrence

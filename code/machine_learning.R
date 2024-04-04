@@ -220,6 +220,7 @@ varImpPlot(rf_test_class,
            sort = T,
            n.var = 10,
            main = "Top 10 Variable Importance")
+?varImpPlot
 
 partialPlot(rf_test_class, classify, M_high)
 
