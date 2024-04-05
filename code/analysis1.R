@@ -2,7 +2,7 @@
 # Carla Leone
 # 5th March, 2024
 
-## Load the dataset and packages ----
+### Load the dataset and packages ----
 install.packages("tidyverse")
 install.packages("vegan")
 library(tidyverse)
@@ -14,35 +14,43 @@ meta_richness <- read_excel("data/meta_richness.xlsx",
 View(meta_richness)
 meta_richness$habitat<- as.factor(meta_richness$habitat)
 
-## NMDS Full Presence----
+### NMDS broadband Presence/Absence----
 max_richness <- read_excel("data/phonic_richness.xlsx", 
                                        sheet = "full_presence (2)")
 View(max_richness)
 max_richness<- subset(max_richness, select = -c(knock))
-
-max_richness<- max_richness %>%
-  column_to_rownames(var = "site") # make site the name of the rows
-
-
 ## Make separate for habitats
 habitats <- read_excel("data/meta_richness.xlsx", 
-                         sheet = "habitats")
-View(habitats)
+                       sheet = "habitats")
 habitats$habitat<- as.factor(habitats$habitat) # make habitat a factor
 habitats<- subset(habitats, select= c(site, habitat)) #reduce the habitat data frame 
+#creating max_richness 2 with habitat in the data frame to make plotting easier
 max_richness_2<- merge(habitats, max_richness, by = c("site"))
 max_richness_2<- max_richness_2 %>%
   column_to_rownames(var = "site")
 max_richness_2$habitat<- as.factor(max_richness_2$habitat)
+#once max_richness two has been created, can make site the row names in max richness 1
+max_richness<- max_richness %>%
+  column_to_rownames(var = "site") # make site the name of the rows
 
 ### Distance matrix calculation
-max_richness_dist<- vegdist(max_richness, method="jaccard")
+max_richness_dist<- vegdist(max_richness, method="bray", binary =T)
 max_richness_dist
+perm_max_richness<- adonis2(max_richness_dist ~ habitat, data = habitats)
+perm_max_richness
 
-### NMDS
+nmds_richness<- metaMDS(max_richness_dist, #the community data
+                        try = 300)
+nmds_richness
+#distance = binary bray
+
+### NMDS Broadband Presence/Absence plot ----
+
 richness_nmds<- metaMDS(max_richness_2[,-c(habitat)], #the community data
-                    distance = "jaccard", # Using bray-curtis distance
-                    try = 300)
+                    distance = "bray",# Using bray-curtis distance
+                    k =2 , # two dimensions
+                    try = 300) #300 tries
+richness_nmds
 goodness(richness_nmds)
 scores(richness_nmds)
 View(max_richness_2)
@@ -184,6 +192,8 @@ summary(x1)
 plot(x1)
 
 
+#----
+#----
 ## NMDS Full Relative Abundance ----
 max_relative_abundance <- read_excel("data/phonic_richness.xlsx", 
                            sheet = "full_relative_abundance (2)")
@@ -249,48 +259,41 @@ summary(habitat_simper)
 
 
 
+#----
+#----
 ## NMDS Full Occurrence ---- 
 # Load the data
 library(readxl)
-full_occurrence <- read_excel("data/phonic_richness.xlsx", 
+full_abundance <- read_excel("data/phonic_richness.xlsx", 
                             sheet = "full_occurrence (2)")
-View(full_occurrence)
-full_occurrence<- subset(full_occurrence, select = -c(knock))
+View(full_abundance)
+full_abundance<- subset(full_abundance, select = -c(knock))
 
 
 # make the sites the row names
-full_occurrence<- full_occurrence %>%
+full_abundance<- full_abundance %>%
 column_to_rownames(var = "site")
-str(full_occurrence)
+str(full_abundance)
 
-full_abundance<- full_occurrence[, 1:16] <- full_occurrence[, 1:16] * 13
+full_abundance<- full_abundance[, 1:16] <- full_abundance[, 1:16] * 13
 View(full_abundance)
 
-# calculating distances
-full_occurence_distance<- vegdist(full_abundance, method="bray")
-full_occurence_distance
+# calculating distances and permanova
+full_abundance_distance<- vegdist(full_abundance, method="bray")
+perm_full_abundance<- adonis2(full_abundance_distance ~ habitat, data = habitats)
+perm_full_abundance
 
 # make the nmds
-full_occurrence_nmds<- metaMDS(full_abundance, #the community data
+full_abundance_nmds<- metaMDS(full_abundance_distance, #the community data
                       distance = "bray",
                k=2,# Using bray-curtis distance
                       try = 300)
 
-full_occurrence_nmds
-#stress = 0.074
+full_abundance_nmds
+#stress = 0.079
 # method of distance is bray curtis dissimilarity
 
-
-
-### permanova
-#permanova
-dist_full_occurrence<- vegdist(full_abundance, method="bray")
-perm_full_occurrence <- adonis2(dist_full_occurrence ~ habitat, data = habitats)
-
-perm_full_occurrence
-# significant with a p value =. 0.009, f = 3.4561, df habitat =3, df resid =7, df total =9
-plot(full_occurrence_nmds)
-
+plot(full_abundance_nmds)
 ordihull(full_occurrence_nmds, # the nmds we created
          groups= habitats$habitat, #calling the groups from the mpa data frame we made
          draw = "polygon", # drawing polygons
@@ -299,18 +302,28 @@ ordihull(full_occurrence_nmds, # the nmds we created
 ) 
 
 
-### SIMPER
-basic_simper_full_occurence<- simper(full_occurrence,
+### SIMPER = contribution to dissimilarities ...between groups
+basic_simper_full_abundance<- simper(full_abundance,
                       distance= "bray",#our community data set
                       permutations = 999) # permutations to run
 
-summary(basic_simper , ordered = TRUE) #summary is the total contrast.
+summary(basic_simper_full_abundance, ordered = T) #summary is the total contrast.
+# Extract dissimilarity values and contributions
+dissimilarity <- basic_simper_full_abundance$diss
+contributions <- basic_simper_full_abundance$contrib
 
-habitat_simper<- simper(max_relative_abundance, 
+# Combine dissimilarity and contributions into a data frame
+simper_output <- data.frame(Dissimilarity = dissimilarity, Contributions = contributions)
+View(simper_output)
+basic_simper_full_abundance
+write.table(basic_simper_full_abundance)
+write.table(basic_simper_full_abundance, file = "simper_output_table.txt", sep = "\t", quote = FALSE)
+?simper
+habitat_simper_full_abundance<- simper(full_abundance, 
                         habitats$habitat,
                         distance= "bray",
                         permutations = 999)
-summary(habitat_simper)
+summary(habitat_simper_full_abundance)
 
 # plotting with ggplot ----
 data.scores <- as.data.frame(scores(activity_nmds))  #Using the scores function from vegan to extract the site scores and convert to a data.frame
