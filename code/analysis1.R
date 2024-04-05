@@ -45,6 +45,7 @@ nmds_richness<- metaMDS(max_richness_dist,
 nmds_richness
 #distance = binary bray
 
+# ----
 ### NMDS Broadband Presence/Absence plot ----
 
 richness_nmds<- metaMDS(max_richness_2[,-c(1)], #the community data
@@ -392,21 +393,27 @@ for(i in 1:length(unique(max_abundance_2$habitat))){
 (max_abundance_nmds_plot <- ggplot() +
     geom_polygon(data=hull.data,aes(x=NMDS1,y=NMDS2,fill=grp,group=grp),alpha=0.30) +# add the convex hulls
     labs(fill = "Habitat Category") +
-    geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size= 2, alpha=0.5) +  # add the species labels
+   # geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size= 2, alpha=0.5) +  # add the species labels
     geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,colour=grp),size=3) + # add the point markers
     geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label=site),size=3,vjust=0) +  # add the site labels
     scale_colour_manual(values=Colours) +
     scale_fill_manual(values=Colours) +
     # scale_x_continuous(limits = c(-1.4, 3), breaks = c(-1,0,1,2,3)) +
     # scale_y_continuous(limits = c(-1.4, 1.2), breaks = c(-1,-0.5,0, 0.5 ,1)) +
-    scale_x_continuous(limits = c(-0.7, 1.3), breaks = c(-0.5,0,0.5,1,1.5)) +
-    scale_y_continuous(limits = c(-0.7, 0.7), breaks = c(-0.5,0,0.5,1,1.5)) +
+    scale_x_continuous(limits = c(-0.7, 0.8), breaks = c(-0.5,0,0.5,1,1.5)) +
+    scale_y_continuous(limits = c(-0.7, 0.5), breaks = c(-0.5,0,0.5,1,1.5)) +
     #coord_equal() +
     theme_classic() +
     ggtitle("Broadband Sound Type Abundance") +
-    theme(plot.title = element_text(hjust = 0.5))+
-    guides(colour = FALSE))
+    theme(plot.title = element_text(hjust = 0.5),
+           axis.text = element_text(size = 14),  # adjust font size of axis text
+           axis.title = element_text(size = 16))+
+    guides(colour = FALSE) +
+  theme(axis.line = element_line(size = 1),  # adjust axis line thickness
+                                  legend.text = element_text(size = 12),  # increase legend text size
+                                  legend.title = element_text(size = 14))  
 
+)
 
 # plotting with ggplot ----
 data.scores <- as.data.frame(scores(activity_nmds))  #Using the scores function from vegan to extract the site scores and convert to a data.frame

@@ -168,7 +168,7 @@ df_habitat_2$richness<- as.factor(df_habitat_2$richness)
 View(df_habitat_2)
 # training
 set.seed(222)
-ind2 <- sample(2, nrow(df_habitat_2), replace = TRUE, prob = c(0.7, 0.3))
+ind2 <- sample(2, nrow(df_habitat_2), replace = TRUE, prob = c(0.6, 0.4))
 train2 <- df_habitat_2[ind2==1,]  
 train2
 train2 <- na.omit(train2)
@@ -221,29 +221,34 @@ test2 <- df_habitat_2.2[ind2==2,]
 rf.2.2<- randomForest(richness~., data=train2, proximity=TRUE) 
 print(rf.2.2)
 MDSplot(rf2, train2$richness)
+View(merged_habitats)
 # Data frame for habitat category 3
-df_habitat_3 <- merged_habitats %>%
-  filter(habitat.y == 3)%>%
-  select(-c(habitat.y, site))
-df_habitat_3$richness<- as.factor(df_habitat_3$richness)
+df_habitat_1 <- merged_habitats %>%
+  filter(habitat == 1)%>%
+  select(-c(habitat, site))
+df_habitat_1$richness<- as.factor(df_habitat_1$richness)
 View(df_habitat_1)
 
+is.na(df_habitat_1$richness)
+any(is.na(train1$richness))
+levels(train1$richness)
+table(df_habitat_1$richness)
 # training
 set.seed(222)
-ind3 <- sample(2, nrow(df_habitat_3), replace = TRUE, prob = c(0.7, 0.3))
-train3 <- df_habitat_3[ind3==1,]  
-test3 <- df_habitat_3[ind3==2,] 
+ind1 <- sample(2, nrow(df_habitat_1), replace = TRUE, prob = c(0.6, 0.4))
+train1 <- df_habitat_1[ind1==1,]  
+test1<- df_habitat_1[ind1==2,] 
 
 
 #random forest
-rf3 <- randomForest(richness~., data=train3, proximity=TRUE) 
-print(rf3)
+rf1 <- randomForest(richness~., data=train1, proximity=TRUE, mtry= 4) 
+print(rf1)
 
-p1.3<- predict(rf3, train3)
+p1<- predict(rf3, train3)
 confusionMatrix(p1.3, train3$ richness)
 
-p2.3<- predict(rf3, test3)
-confusionMatrix(p2.3, test3$ richness)
+p2<- predict(rf1, test1)
+confusionMatrix(p2, test1$ richness)
 
 # adjust the model because clearly has a lot of error
 t <- tuneRF(train[,-5], train[,5],
@@ -259,13 +264,37 @@ hist(treesize(rf2),
      col = "green")
 
 #Variable Importance
-varImpPlot(rf2,
+varImpPlot(rf3,
            sort = T,
            n.var = 10,
            main = "Top 10 - Variable Importance")
 importance(rf2)
 
 MDSplot(rf2, train2$richness)
+
+
+df_habitat_1 <- merged_habitats %>%
+  filter(habitat.y == 1)%>%
+  select(-c(habitat.y, site))
+df_habitat_3$richness<- as.factor(df_habitat_3$richness)
+View(df_habitat_1)
+
+# training
+set.seed(222)
+ind3 <- sample(2, nrow(df_habitat_3), replace = TRUE, prob = c(0.6, 0.4))
+train3 <- df_habitat_3[ind3==1,]  
+test3 <- df_habitat_3[ind3==2,] 
+
+
+#random forest
+rf3 <- randomForest(richness~., data=train3, proximity=TRUE, mtry= 4) 
+print(rf3)
+
+p1.3<- predict(rf3, train3)
+confusionMatrix(p1.3, train3$ richness)
+
+p2.3<- predict(rf3, test3)
+confusionMatrix(p2.3, test3$ richness)
 #193 observations of 67 variables----
 merged7<- subset(merged, select = c(4:25, 52))
 View(merged7)
@@ -634,3 +663,56 @@ biplot(pca_indices)
 
 
                    
+### Richness vs time ----
+str(merged)
+time<- subset(merged, select=c(sunrise, time, richness, sunrise_time, site, habitat, day))
+View(time)
+time$habitat<- as.factor(time$habitat)
+
+#linear plot
+ggplot(time, aes(x = time, y = richness, color = site)) +
+geom_smooth(se=F) +
+  geom_point(data = time, aes(x = sunrise_time, y = NA), shape = 17, color = "black", size = 3) +
+  labs(x = "Time", y = "Full Max Richness", color = "Habitat") +
+  facet_wrap(~habitat)+
+  theme_minimal()
+
+sunrise_data <- subset(time, sunrise == "yes")
+View(sunrise_data)
+
+ggplot() +
+  geom_smooth(data = time, aes(x = time, y = richness, color = site), se = FALSE) +
+  geom_point(data = sunrise_data, aes(x = time, y = richness), shape = 17, color = "black", size = 3) +
+  labs(x = "Time", y = "Full Max Richness", color = "Site") +
+  facet_wrap(~habitat) +
+  theme_minimal()
+
+# Plot
+# Summarize data to calculate mean sunrise time per site
+summarized_df <- time %>%
+  group_by(site) %>%
+  summarize(mean_sunrise_time = mean(sunrise_time)) %>%
+  ungroup()
+View(summarized_df)
+# Plot
+ggplot(time, aes(x = time, y = richness, color = site)) +
+  geom_line() +
+  geom_point(data = summarized_df, aes(x = sunrises, y = richness_time), color = "black", size = 3)
+  
+
+sunrise_time<- c("1900-01-01 05:00:00", "1900-01-01 06:30:00", "1900-01-01 04:30:00", "1900-01-01 05:30:00", "1900-01-01 04:30:00", "1900-01-01 06:00:00", "1900-01-01 04:30:00", "1900-01-01 04:30:00", "1900-01-01 05:00:00", "1900-01-01 06:30:00")
+summarized_df$sunrises<- posix_time
+str(summarized_df)
+posix_time <- as.POSIXct(sunrise_time, format = "%Y-%m-%d %H:%M:%S")
+summarized_df$richness_time<- c(6,4,6,5,5,6,5,6,6,5)
+summarized_df<- subset(summarized_df, select = c(sunrises, richness_time))
+#day night and dawn
+danw_data<- time%>%
+  group_by(site, day) %>%
+  summarise(mean = mean(richness),
+            sd = sd(richness))%>%
+  ungroup()
+View(danw_data)
+boxplot(danw_data$mean~danw_data$day)
+
+kruskal.test(mean~day, data=danw_data)

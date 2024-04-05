@@ -67,7 +67,7 @@ library(ggspatial)
 ?geom_point
 site_map<- ggmap(sites)+
   geom_spatial_point(aes(x=long, y= lat, color = habitat), data=df, alpha=1, shape=13, size = 2, crs = 4326) +
-  scale_color_manual( values = c("yellow","green", "red"),
+  scale_color_manual( values = c("red", "green", "#F0E442"),
                      name = "Habitat Category",  # Set legend title
                      labels = c("Habitat 1", "Habitat 2", "Habitat 3")) +  # Set legend labels
   theme_void()+
@@ -86,6 +86,7 @@ site_map2<- site_map1 +
   annotation_scale(location = "tl") +
   coord_sf(crs = 4326)
 
+site_map2
 
 ## Add the legend 
 
