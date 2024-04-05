@@ -39,24 +39,26 @@ max_richness_dist
 perm_max_richness<- adonis2(max_richness_dist ~ habitat, data = habitats)
 perm_max_richness
 
-nmds_richness<- metaMDS(max_richness_dist, #the community data
+nmds_richness<- metaMDS(max_richness_dist,
+                        distance = "bray", 
                         try = 300)
 nmds_richness
 #distance = binary bray
 
 ### NMDS Broadband Presence/Absence plot ----
 
-richness_nmds<- metaMDS(max_richness_2[,-c(habitat)], #the community data
-                    distance = "bray",# Using bray-curtis distance
-                    k =2 , # two dimensions
-                    try = 300) #300 tries
+richness_nmds<- metaMDS(max_richness_2[,-c(1)], #the community data
+                    distance = "bray",
+                    binary = T,
+                    k =2 , 
+                    try = 300) 
 richness_nmds
 goodness(richness_nmds)
 scores(richness_nmds)
 View(max_richness_2)
 nrow(max_richness_2$habitat)
-#stress = 0.099
-#distance = jaccard
+#stress = 0.079
+#distance = bray
 plot(richness_nmds)
 stressplot(richness_nmds)
 
@@ -76,7 +78,7 @@ for(i in unique(group)) {
    orditorp(richness_nmds, display = "species", label=F, col = "Grey50", air = 0.01)
   
    fit <- adonis2(max_richness_2[, -c(1)] ~ habitat, max_richness_2, 
-                 permutations = 999, method = "jaccard")
+                 permutations = 999, method = "bray")
   fit
   
 ##needs to a be highlighted and run together
@@ -110,13 +112,13 @@ for(i in unique(group)) {
       labs(fill = "Habitat Category") +
       geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size= 2, alpha=0.5) +  # add the species labels
       geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,colour=grp),size=3) + # add the point markers
-      #geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label=site),size=3,vjust=0) +  # add the site labels
+      geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label=site),size=3,vjust=0) +  # add the site labels
       scale_colour_manual(values=Colours) +
       scale_fill_manual(values=Colours) +
       # scale_x_continuous(limits = c(-1.4, 3), breaks = c(-1,0,1,2,3)) +
       # scale_y_continuous(limits = c(-1.4, 1.2), breaks = c(-1,-0.5,0, 0.5 ,1)) +
       scale_x_continuous(limits = c(-0.7, 1.6), breaks = c(-0.5,0,0.5,1,1.5)) +
-      scale_y_continuous(limits = c(-0.7, 0.5), breaks = c(-0.5,-0.25,0,0.25,0.5)) +
+      scale_y_continuous(limits = c(-0.7, 0.5), breaks = c(-0.5,0,0.5,1,1.5)) +
       #coord_equal() +
       theme_classic() +
       ggtitle("Broadband Presence/Absence") +
@@ -171,7 +173,7 @@ pmod <- permutest(permdisp_max_richness, permutations = 99, pairwise = TRUE)
 pmod
 # p value is 0.97 which indicates that the dispersion is not significantly different between the groups. 
 
-eNMDS### SIMPER
+### SIMPER
 basic_simper<- simper(max_richness,
                       distance= "jaccard",#our community data set
                       permutations = 999) # permutations to run
@@ -194,7 +196,7 @@ plot(x1)
 
 #----
 #----
-## NMDS Full Relative Abundance ----
+### NMDS Full Relative Abundance ----
 max_relative_abundance <- read_excel("data/phonic_richness.xlsx", 
                            sheet = "full_relative_abundance (2)")
 View(max_relative_abundance)
@@ -259,9 +261,10 @@ summary(habitat_simper)
 
 
 
-#----
-#----
-## NMDS Full Occurrence ---- 
+# ----
+# ----
+# ----
+## NMDS Broadband Abundance ---- 
 # Load the data
 library(readxl)
 full_abundance <- read_excel("data/phonic_richness.xlsx", 
@@ -325,6 +328,86 @@ habitat_simper_full_abundance<- simper(full_abundance,
                         permutations = 999)
 summary(habitat_simper_full_abundance)
 
+# ----
+## NMDS Broadband Abundance Plot ----
+# the nmds
+full_abundance_nmds<- metaMDS(max_abundance_2[,-c(1)], #the community data
+                              distance = "bray",
+                              k=2,# Using bray-curtis distance
+                              try = 300)
+full_abundance_nmds
+max_abundance_2<- merge(habitats, full_abundance, by = c("site"))
+max_abundance_2<- max_abundance_2 %>%
+  column_to_rownames(var = "site")
+max_abundance_2$habitat<- as.factor(max_abundance_2$habitat)
+max_abundance_2<- subset(max_abundance_2, select= -c(knock))
+
+
+
+group = as.character(max_abundance_2$habitat)
+unique(max_abundance_2$habitat)
+colors = group
+colors[colors=="1"] <- "Green"
+colors[colors==2] <- "Purple"
+colors[colors==3] <- "Orange"
+
+ordiplot(full_abundance_nmds, type = "n", cex.axis = 1.5, cex.lab=1.5)
+
+for(i in unique(group)) {
+  ordihull(full_abundance_nmds$point[grep(i, group),], draw="polygon",
+           groups = group[group == i],col = colors[grep(i,group)],label=F) } 
+
+orditorp(full_abundance_nmds, display = "species", label=F, col = "Grey50", air = 0.01)
+
+fit <- adonis2(max_abundance_2[, -c(1)] ~ habitat, max_abundance_2, 
+               permutations = 999, method = "bray")
+fit
+
+##needs to a be highlighted and run together
+
+## Now to try in ggplot
+# ggplot version - from https://chrischizinski.github.io/rstats/vegan-ggplot2/
+Colours <- c( "#56B4E9", "#009E73", "#F0E442")
+names(Colours) <- c("1", "2", "3")
+Colours_darker <- darken(Colours, 0.4)
+names(Colours_darker) <- c("1", "2", "3")
+
+data.scores <- as.data.frame(scores(full_abundance_nmds)$sites)  #Using the scores function from vegan to extract the site scores and convert to a data.frame
+data.scores$site <- rownames(data.scores)  # create a column of site names, from the rownames of data.scores
+data.scores$grp <- max_abundance_2$habitat  #  add the grp variable created earlier
+View(data.scores)
+
+species.scores <- as.data.frame(scores(full_abundance_nmds, "species"))  #Using the scores function from vegan to extract the species scores and convert to a data.frame
+species.scores$species <- rownames(species.scores)  # create a column of species, from the rownames of species.scores
+head(species.scores) 
+# insect_cols_mansort$Corrected_name
+
+hull.data <- data.frame()
+for(i in 1:length(unique(max_abundance_2$habitat))){
+  temp <- data.scores[data.scores$grp == unique(max_abundance_2$habitat)[i], ][chull(data.scores[data.scores$grp == 
+                                                                                                  unique(max_abundance_2$habitat)[i], c("NMDS1", "NMDS2")]), ]
+  hull.data <- rbind(hull.data, temp)
+}
+
+(max_abundance_nmds_plot <- ggplot() +
+    geom_polygon(data=hull.data,aes(x=NMDS1,y=NMDS2,fill=grp,group=grp),alpha=0.30) +# add the convex hulls
+    labs(fill = "Habitat Category") +
+    geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size= 2, alpha=0.5) +  # add the species labels
+    geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,colour=grp),size=3) + # add the point markers
+    geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label=site),size=3,vjust=0) +  # add the site labels
+    scale_colour_manual(values=Colours) +
+    scale_fill_manual(values=Colours) +
+    # scale_x_continuous(limits = c(-1.4, 3), breaks = c(-1,0,1,2,3)) +
+    # scale_y_continuous(limits = c(-1.4, 1.2), breaks = c(-1,-0.5,0, 0.5 ,1)) +
+    scale_x_continuous(limits = c(-0.7, 1.3), breaks = c(-0.5,0,0.5,1,1.5)) +
+    scale_y_continuous(limits = c(-0.7, 0.7), breaks = c(-0.5,0,0.5,1,1.5)) +
+    #coord_equal() +
+    theme_classic() +
+    ggtitle("Broadband Sound Type Abundance") +
+    theme(plot.title = element_text(hjust = 0.5))+
+    guides(colour = FALSE))
+
+
 # plotting with ggplot ----
 data.scores <- as.data.frame(scores(activity_nmds))  #Using the scores function from vegan to extract the site scores and convert to a data.frame
 data.scores$site <- rownames(data.scores)  # create a column of site names, from the rownames of data.scores
@@ -353,7 +436,7 @@ names(Colours) <- c("BW", "LI", "SOSR", "WB", "WOSR", "WW")
 Colours_darker <- darken(Colours, 0.4)
 names(Colours_darker) <- c("BW", "LI", "SOSR", "WB", "WOSR", "WW")
 
-(  activity_NMDS_plot <- ggplot() +
+(  full_abundance_NMDS_plot <- ggplot() +
     geom_polygon(data=hull.data,aes(x=sites.NMDS1,y=sites.NMDS2,fill=habitat,group=habitat),alpha=0.30) + # add the convex hulls
     #geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),alpha=0.5) +  # add the species labels
     geom_point(data=data.scores,aes(x=sites.NMDS1,y=sites.NMDS2,colour=habitat),size=3) + # add the point markers
@@ -382,6 +465,8 @@ stressplot(nmds)
 ordiplot(nmds, type= "text")
 
 
+# ----
+# ----
 ## NMDS Low Relative Abundance ----
 # import the dataset
 low_relative_abundance <- read_excel("data/phonic_richness.xlsx", 
@@ -431,19 +516,28 @@ habitat_simper<- simper(presence_nmds,
 summary(habitat_simper)
 
 
+# ----
+# ---- 
 ## NMDS Low presence ----
 low_presence<- read_excel("data/phonic_richness.xlsx", 
                                       sheet = "low_presence (2)")
 View(low_presence)
-low_presence<- subset(low_presence, select = -c(habitat) ) #remove unnecessary columnsc
+low_presence<- subset(low_presence, select = -c(habitat) ) #remove unnecessary columns
 
 low_presence<- low_presence %>%
   column_to_rownames(var = "site")
 View(low_presence)
 
+## Distance matrix and PERMANOVA
+low_presence_dist<- vegdist(low_presence, method = "bray", binary = T)
+low_presence_perm<- adonis2(low_presence_dist~ habitat, data = habitats)
+low_presence_perm
+
+
 ##nmds
-nmds_low_presence<-  metaMDS(low_presence, #the community data
-                                            distance = "jaccard",
+nmds_low_presence<-  metaMDS(low_presence_dist, 
+                                            distance = "bray",
+                                            k = 2, 
                                             try = 300)
 
 nmds_low_presence
@@ -452,16 +546,6 @@ plot(nmds_low_presence)
 stressplot(nmds_low_presence)
 ordiplot(nmds_low_presence, type= "text")
 
-View(habitats)
-habitats<- subset(habitats, select= -c(boats,wind, animals ))
-
-#permanova
-dist_low_presence<- vegdist(low_presence, method="jaccard")
-perm_low_presence <- adonis2(dist_low_presence ~ habitat, data = habitats)
-
-summary(perm_low_presence)
-perm_low_presence
-# not significant, p = 0.525
 
 #simper
 basic_simper<- simper(low_presence, #our community data set
@@ -481,21 +565,107 @@ ordihull(nmds_low_presence, # NMDS results object
          col = 1:3, # Specify colors for polygons
          label = FALSE # Remove labels from polygons
 )
+## ----
+## NMDS Low presence Plot ----
+# the nmds
+low_presence_nmds<- metaMDS(low_presence_2[,-c(1)], #the community data
+                              distance = "bray",
+                            binary = T,
+                              k=2,# Using bray-curtis distance
+                              try = 300)
 
-## NMDS low Occurrence ----
-low_occurrence<- read_excel("data/phonic_richness.xlsx", 
-                                      sheet = "low_activity (2)")
-View(low_occurrence)
-low_occurrence<- subset(low_occurrence, select = -c(habitat))
-low_occurrence<- low_occurrence %>%
+
+low_presence_2<- merge(habitats, low_presence, by = c("site"))
+low_presence_2<- low_presence_2 %>%
   column_to_rownames(var = "site")
-str(low_occurrence)
-low_abundance<- low_occurrence[, 1:12] <- low_occurrence[, 1:12] * 13
+low_presence_2$habitat<- as.factor(low_presence_2$habitat)
+View(low_presence_2)
+
+
+
+group = as.character(low_presence_2$habitat)
+unique(low_presence_2$habitat)
+colors = group
+colors[colors=="1"] <- "Green"
+colors[colors==2] <- "Purple"
+colors[colors==3] <- "Orange"
+
+ordiplot(low_presence_nmds, type = "n", cex.axis = 1.5, cex.lab=1.5)
+
+for(i in unique(group)) {
+  ordihull(low_presence_nmds$point[grep(i, group),], draw="polygon",
+           groups = group[group == i],col = colors[grep(i,group)],label=F) } 
+
+orditorp(low_presence_nmds, display = "species", label=F, col = "Grey50", air = 0.01)
+
+fit <- adonis2(low_presence_2[, -c(1)] ~ habitat, low_presence_2, 
+               permutations = 999, method = "bray")
+fit
+
+##needs to a be highlighted and run together
+
+## Now to try in ggplot
+# ggplot version - from https://chrischizinski.github.io/rstats/vegan-ggplot2/
+Colours <- c( "#56B4E9", "#009E73", "#F0E442")
+names(Colours) <- c("1", "2", "3")
+Colours_darker <- darken(Colours, 0.4)
+names(Colours_darker) <- c("1", "2", "3")
+
+data.scores <- as.data.frame(scores(low_presence_nmds)$sites)  #Using the scores function from vegan to extract the site scores and convert to a data.frame
+data.scores$site <- rownames(data.scores)  # create a column of site names, from the rownames of data.scores
+data.scores$grp <-low_presence_2$habitat  #  add the grp variable created earlier
+View(data.scores)
+
+species.scores <- as.data.frame(scores(low_presence_nmds, "species"))  #Using the scores function from vegan to extract the species scores and convert to a data.frame
+species.scores$species <- rownames(species.scores)  # create a column of species, from the rownames of species.scores
+head(species.scores) 
+# insect_cols_mansort$Corrected_name
+
+hull.data <- data.frame()
+for(i in 1:length(unique(low_presence_2$habitat))){
+  temp <- data.scores[data.scores$grp == unique(low_presence_2$habitat)[i], ][chull(data.scores[data.scores$grp == 
+                                                                                                   unique(low_presence_2$habitat)[i], c("NMDS1", "NMDS2")]), ]
+  hull.data <- rbind(hull.data, temp)
+}
+
+(low_presence_nmds_plot <- ggplot() +
+    geom_polygon(data=hull.data,aes(x=NMDS1,y=NMDS2,fill=grp,group=grp),alpha=0.30) +# add the convex hulls
+    labs(fill = "Habitat Category") +
+    geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size= 2, alpha=0.5) +  # add the species labels
+    geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,colour=grp),size=3) + # add the point markers
+    geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label=site),size=3,vjust=0) +  # add the site labels
+    scale_colour_manual(values=Colours) +
+    scale_fill_manual(values=Colours) +
+    # scale_x_continuous(limits = c(-1.4, 3), breaks = c(-1,0,1,2,3)) +
+    # scale_y_continuous(limits = c(-1.4, 1.2), breaks = c(-1,-0.5,0, 0.5 ,1)) +
+    scale_x_continuous(limits = c(-0.7, 1.0), breaks = c(-0.5,0,0.5,1,1.5)) +
+    scale_y_continuous(limits = c(-0.7, 1.0), breaks = c(-0.5,0,0.5,1,1.5)) +
+    #coord_equal() +
+    theme_classic() +
+    ggtitle("Low Frequency Band Sound Type Presence/Absence") +
+    theme(plot.title = element_text(hjust = 0.5))+
+    guides(colour = FALSE))
+
+
+## ----
+## NMDS low Abundance ----
+low_abundance<- read_excel("data/phonic_richness.xlsx", 
+                                      sheet = "low_activity (2)")
+View(low_abundance)
+low_abundance<- subset(low_abundance, select = -c(habitat))
+low_abundance<- low_abundance %>%
+  column_to_rownames(var = "site")
+str(low_abundance)
+low_abundance<- low_abundance[, 1:12] <- low_abundance[, 1:12] * 13
+
+## distances and permanva
+low_abundance_dist<- vegdist(low_abundance, method = "bray")
+low_abundance_perm<- adonis2(low_abundance_dist~ habitat, data = habitats)
+low_abundance_perm
 
 ##nmds
-nmds_low_occurrence<-  metaMDS(low_abundance, #the community data
+nmds_low_abundance<-  metaMDS(low_abundance, #the community data
                              distance = "bray",
-                             autotransform = T,
                              # Using bray-curtis distance
                              try = 300)
 
@@ -566,6 +736,95 @@ ordihull(nmds_low_abundance_matrix, # the nmds we created
          label = FALSE #removing labels from the plygons
 ) 
 
+## ----
+### NMDS Low abundance plot ----
+# the nmds
+low_abundance_nmds<- metaMDS(low_abundance_2[,-c(1)], #the community data
+                            distance = "bray",
+                            k=2,# Using bray-curtis distance
+                            try = 300)
+
+low_abundance<- read_excel("data/phonic_richness.xlsx", 
+                           sheet = "low_activity (2)")
+low_abundance<- subset(low_abundance, select = -c(habitat))
+low_abundance<- low_abundance %>%
+  column_to_rownames(var = "site")
+site<- rownames(low_abundance)
+low_abundance<- low_abundance[, 1:12] <- low_abundance[, 1:12] * 13
+low_abundance$site<- site
+str(low_abundance)
+low_abundance_2<- merge(habitats, low_abundance, by = c("site"))
+low_abundance_2<- low_abundance_2 %>%
+  column_to_rownames(var = "site")
+low_abundance_2$habitat<- as.factor(low_abundance_2$habitat)
+View(low_abundance_2)
+
+
+
+group = as.character(low_abundance_2$habitat)
+unique(low_abundance_2$habitat)
+colors = group
+colors[colors=="1"] <- "Green"
+colors[colors==2] <- "Purple"
+colors[colors==3] <- "Orange"
+
+ordiplot(low_abundance_nmds, type = "n", cex.axis = 1.5, cex.lab=1.5)
+
+for(i in unique(group)) {
+  ordihull(low_abundance_nmds$point[grep(i, group),], draw="polygon",
+           groups = group[group == i],col = colors[grep(i,group)],label=F) } 
+
+orditorp(low_abundance_nmds, display = "species", label=F, col = "Grey50", air = 0.01)
+
+fit <- adonis2(low_abundance_2[, -c(1)] ~ habitat, low_abundance_2, 
+               permutations = 999, method = "bray")
+fit
+
+##needs to a be highlighted and run together
+
+## Now to try in ggplot
+# ggplot version - from https://chrischizinski.github.io/rstats/vegan-ggplot2/
+Colours <- c( "#56B4E9", "#009E73", "#F0E442")
+names(Colours) <- c("1", "2", "3")
+Colours_darker <- darken(Colours, 0.4)
+names(Colours_darker) <- c("1", "2", "3")
+
+data.scores <- as.data.frame(scores(low_abundance_nmds)$sites)  #Using the scores function from vegan to extract the site scores and convert to a data.frame
+data.scores$site <- rownames(data.scores)  # create a column of site names, from the rownames of data.scores
+data.scores$grp <-low_abundance_2$habitat  #  add the grp variable created earlier
+View(data.scores)
+
+species.scores <- as.data.frame(scores(low_abundance_nmds, "species"))  #Using the scores function from vegan to extract the species scores and convert to a data.frame
+species.scores$species <- rownames(species.scores)  # create a column of species, from the rownames of species.scores
+head(species.scores) 
+# insect_cols_mansort$Corrected_name
+
+hull.data <- data.frame()
+for(i in 1:length(unique(low_abundance_2$habitat))){
+  temp <- data.scores[data.scores$grp == unique(low_abundance_2$habitat)[i], ][chull(data.scores[data.scores$grp == 
+                                                                                                  unique(low_abundance_2$habitat)[i], c("NMDS1", "NMDS2")]), ]
+  hull.data <- rbind(hull.data, temp)
+}
+
+(low_abundance_nmds_plot <- ggplot() +
+    geom_polygon(data=hull.data,aes(x=NMDS1,y=NMDS2,fill=grp,group=grp),alpha=0.30) +# add the convex hulls
+    labs(fill = "Habitat Category") +
+   geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size= 2, alpha=0.5) +  # add the species labels
+    geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,colour=grp),size=3) + # add the point markers
+    geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label=site),size=3,vjust=0) +  # add the site labels
+    scale_colour_manual(values=Colours) +
+    scale_fill_manual(values=Colours) +
+    # scale_x_continuous(limits = c(-1.4, 3), breaks = c(-1,0,1,2,3)) +
+    # scale_y_continuous(limits = c(-1.4, 1.2), breaks = c(-1,-0.5,0, 0.5 ,1)) +
+    scale_x_continuous(limits = c(-0.7, 1.6), breaks = c(-0.5,0,0.5,1,1.5)) +
+    scale_y_continuous(limits = c(-0.7, 1.0), breaks = c(-0.5,0,0.5,1,1.5)) +
+    #coord_equal() +
+    theme_classic() +
+    ggtitle("Low Frequency Band Sound Type Abundance") +
+    theme(plot.title = element_text(hjust = 0.5))+
+    guides(colour = FALSE))
+### ----
+### ----
 ## low occurrence nmds----
 nmds_low_activity_matrix<- read_excel("data/meta_richness.xlsx", 
                                        sheet = "low_activity")
