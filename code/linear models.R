@@ -634,3 +634,56 @@ biplot(pca_indices)
 
 
                    
+### Richness vs time ----
+str(merged)
+time<- subset(merged, select=c(sunrise, time, richness, sunrise_time, site, habitat, day))
+View(time)
+time$habitat<- as.factor(time$habitat)
+
+#linear plot
+ggplot(time, aes(x = time, y = richness, color = site)) +
+geom_smooth(se=F) +
+  geom_point(data = time, aes(x = sunrise_time, y = NA), shape = 17, color = "black", size = 3) +
+  labs(x = "Time", y = "Full Max Richness", color = "Habitat") +
+  facet_wrap(~habitat)+
+  theme_minimal()
+
+sunrise_data <- subset(time, sunrise == "yes")
+View(sunrise_data)
+
+ggplot() +
+  geom_smooth(data = time, aes(x = time, y = richness, color = site), se = FALSE) +
+  geom_point(data = sunrise_data, aes(x = time, y = richness), shape = 17, color = "black", size = 3) +
+  labs(x = "Time", y = "Full Max Richness", color = "Site") +
+  facet_wrap(~habitat) +
+  theme_minimal()
+
+# Plot
+# Summarize data to calculate mean sunrise time per site
+summarized_df <- time %>%
+  group_by(site) %>%
+  summarize(mean_sunrise_time = mean(sunrise_time)) %>%
+  ungroup()
+View(summarized_df)
+# Plot
+ggplot(time, aes(x = time, y = richness, color = site)) +
+  geom_line() +
+  geom_point(data = summarized_df, aes(x = sunrises, y = richness_time), color = "black", size = 3)
+  
+
+sunrise_time<- c("1900-01-01 05:00:00", "1900-01-01 06:30:00", "1900-01-01 04:30:00", "1900-01-01 05:30:00", "1900-01-01 04:30:00", "1900-01-01 06:00:00", "1900-01-01 04:30:00", "1900-01-01 04:30:00", "1900-01-01 05:00:00", "1900-01-01 06:30:00")
+summarized_df$sunrises<- posix_time
+str(summarized_df)
+posix_time <- as.POSIXct(sunrise_time, format = "%Y-%m-%d %H:%M:%S")
+summarized_df$richness_time<- c(6,4,6,5,5,6,5,6,6,5)
+summarized_df<- subset(summarized_df, select = c(sunrises, richness_time))
+#day night and dawn
+danw_data<- time%>%
+  group_by(site, day) %>%
+  summarise(mean = mean(richness),
+            sd = sd(richness))%>%
+  ungroup()
+View(danw_data)
+boxplot(danw_data$mean~danw_data$day)
+
+kruskal.test(mean~day, data=danw_data)
