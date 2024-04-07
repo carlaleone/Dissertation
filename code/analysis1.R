@@ -534,10 +534,16 @@ low_presence<- subset(low_presence, select = -c(habitat) ) #remove unnecessary c
 low_presence<- low_presence %>%
   column_to_rownames(var = "site")
 View(low_presence)
+low_presence_2<- merge(habitats, low_presence, by = c("site"))
+low_presence_2<- low_presence_2 %>%
+  column_to_rownames(var = "site")
+low_presence_2$habitat<- as.factor(low_presence_2$habitat)
+View(low_presence_2)
+
 
 ## Distance matrix and PERMANOVA
-low_presence_dist<- vegdist(low_presence, method = "bray", binary = T)
-low_presence_perm<- adonis2(low_presence_dist~ habitat, data = habitats)
+low_presence_dist<- vegdist(low_presence_2[,-c(habitat)], method = "bray", binary = T)
+low_presence_perm<- adonis2(low_presence_dist~ habitat, data = low_presence_2)
 low_presence_perm
 
 
@@ -581,13 +587,20 @@ low_presence_nmds<- metaMDS(low_presence_2[,-c(1)], #the community data
                               k=2,# Using bray-curtis distance
                               try = 300)
 
+low_presence_nmds
+stressplot(low_presence_nmds)
+#simper
+low_basic_simper<- simper(low_presence_2[,-c(1)],
+                          distance = "bray",
+                          binary = T,
+                      permutations = 999) # permutations to run
 
-low_presence_2<- merge(habitats, low_presence, by = c("site"))
-low_presence_2<- low_presence_2 %>%
-  column_to_rownames(var = "site")
-low_presence_2$habitat<- as.factor(low_presence_2$habitat)
-View(low_presence_2)
+summary(low_basic_simper , ordered = TRUE) #summary is the total contrast.
 
+habitat_simper<- simper(nmds_low_richness_matrix, 
+                        habitats$habitat,
+                        permutations = 999)
+summary(habitat_simper)
 
 
 group = as.character(low_presence_2$habitat)
@@ -746,10 +759,28 @@ ordihull(nmds_low_abundance_matrix, # the nmds we created
 ## ----
 ### NMDS Low abundance plot ----
 # the nmds
+str(low_abundance_2)
+low_abundance_dist<- vegdist(low_abundance_2[,-c(habitat)], method="bray")
+low_abundance_perm<- adonis2(low_abundance_dist~ habitat, data = low_abundance_2)
+low_abundance_perm
 low_abundance_nmds<- metaMDS(low_abundance_2[,-c(1)], #the community data
                             distance = "bray",
                             k=2,# Using bray-curtis distance
                             try = 300)
+stressplot(low_abundance_nmds)
+
+#simper
+low_abund_basic_simper<- simper(low_abundance_2[,-c(habitat)],
+                                distance = "bray", #our community data set
+                      permutations = 999) # permutations to run
+
+summary(low_abund_basic_simper , ordered = TRUE) #summary is the total contrast.
+# none have significant p values, but highest ratio is the thump
+low_abund_habitat_simper<- simper(low_abundance_2[,-c(habitat)], 
+                                  distance= "bray",
+                        low_abundance_2$habitat,
+                        permutations = 999)
+summary(low_abund_habitat_simper)
 
 low_abundance<- read_excel("data/phonic_richness.xlsx", 
                            sheet = "low_activity (2)")

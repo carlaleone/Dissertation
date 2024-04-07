@@ -346,24 +346,4 @@ View(ratios)
 
 #plot the ratio over time for each habitat
 df_avg_ratios <- ratios %>%
-  group_by(time,habitat) %>%
-  summarise(avg_ratio = mean(invert_dominance),
-            sd_ratio = sd(invert_dominance),
-            se_ratio = sd(invert_dominance) /sqrt(n()))%>%
-  ungroup()#gives the stats for each habitat at each time point. Has taken the average richness of each habitat for each time.
-
-
-View(df_avg_ratios)
-df_avg_ratios[is.na(df_avg_ratios)] <- 0
-
-### Plot by habitat
-ggplot(df_avg_ratios, aes(x = time, y = avg_ratio, color = habitat)) +
-  geom_line() +  # Add lines
-  geom_point() +  # Add points
-  labs(x = "Time", y = "Average Richness", color = "Habitat Category") +  # Labels
-  theme_minimal()  # Optional: change theme if desired
-
-
-
-
-
+  group_by
