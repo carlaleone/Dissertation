@@ -29,14 +29,15 @@ max_richness_2<- merge(habitats, max_richness, by = c("site"))
 max_richness_2<- max_richness_2 %>%
   column_to_rownames(var = "site")
 max_richness_2$habitat<- as.factor(max_richness_2$habitat)
+View(max_richness)
 #once max_richness two has been created, can make site the row names in max richness 1
 max_richness<- max_richness %>%
   column_to_rownames(var = "site") # make site the name of the rows
 
 ### Distance matrix calculation
-max_richness_dist<- vegdist(max_richness, method="bray", binary =T)
+max_richness_dist<- vegdist(max_richness_2[,-c(habitat)], method="bray", binary =T)
 max_richness_dist
-perm_max_richness<- adonis2(max_richness_dist ~ habitat, data = habitats)
+perm_max_richness<- adonis2(max_richness_dist ~ habitat, data = max_richness_2)
 perm_max_richness
 
 nmds_richness<- metaMDS(max_richness_dist,
@@ -48,16 +49,15 @@ nmds_richness
 # ----
 ### NMDS Broadband Presence/Absence plot ----
 
-richness_nmds<- metaMDS(max_richness_2[,-c(1)], #the community data
+richness_nmds<- metaMDS(max_richness_2[,-c(habitat)], #the community data
                     distance = "bray",
                     binary = T,
                     k =2 , 
                     try = 300) 
 richness_nmds
 goodness(richness_nmds)
-scores(richness_nmds)
-View(max_richness_2)
-nrow(max_richness_2$habitat)
+stressplot(richness_nmds)
+
 #stress = 0.079
 #distance = bray
 plot(richness_nmds)
