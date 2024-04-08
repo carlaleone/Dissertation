@@ -16,6 +16,17 @@ habitats$habitat<- as.factor(habitats$habitat) # make habitat a factor
 habitats<- subset(habitats, select= c(site, habitat)) #reduce the habitat data frame 
 #creating max_richness 2 with habitat in the data frame to make plotting easier
 max_richness_2<- merge(habitats, max_richness, by = c("site"))
+max_richness_2 <- max_richness_2 %>%
+  mutate(site = recode(site, "ardmore" = "Ardmore", 
+                       "port_dinallaen"="Port Dinllaen", 
+                       "canna" = "Canna", 
+                       "isle_of_soay"="Isle of Soay", 
+                       "kyles_of_bute"= "Kyles of Bute",
+                       "gallanach_bay"= "Gallanach Bay", 
+                       "gansey_bay"= "Gansey Bay", 
+                       "kintyre"= "Kintyre",
+                       "skye"= "Skye", 
+                       "craignish"="Loch Craignish")) # make site names presentable
 max_richness_2<- max_richness_2 %>%
   column_to_rownames(var = "site")
 max_richness_2$habitat<- as.factor(max_richness_2$habitat)
@@ -104,20 +115,27 @@ for(i in 1:length(unique(max_richness_2$habitat))){
 (max_richness_nmds_plot <- ggplot() +
     geom_polygon(data=hull.data,aes(x=NMDS1,y=NMDS2,fill=grp,group=grp),alpha=0.30) +# add the convex hulls
     labs(fill = "Habitat Category") +
-    geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size= 2, alpha=0.5) +  # add the species labels
+    # geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size= 2, alpha=0.5) +  # add the species labels
     geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,colour=grp),size=3) + # add the point markers
-    geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label=site),size=3,vjust=0) +  # add the site labels
+    geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label = site),size=5,vjust=0) +  # add the site labels
     scale_colour_manual(values=Colours) +
     scale_fill_manual(values=Colours) +
     # scale_x_continuous(limits = c(-1.4, 3), breaks = c(-1,0,1,2,3)) +
     # scale_y_continuous(limits = c(-1.4, 1.2), breaks = c(-1,-0.5,0, 0.5 ,1)) +
-    scale_x_continuous(limits = c(-0.7, 1.6), breaks = c(-0.5,0,0.5,1,1.5)) +
-    scale_y_continuous(limits = c(-0.7, 0.5), breaks = c(-0.5,0,0.5,1,1.5)) +
+    scale_x_continuous(limits = c(-0.5, 0.5), breaks = c(-0.5,0,0.5)) +
+    scale_y_continuous(limits = c(-0.3, 0.5), breaks = c(-0.25,0,0.25,0.5)) +
     #coord_equal() +
     theme_classic() +
     #ggtitle("Broadband Presence/Absence") +
-    theme(plot.title = element_text(hjust = 0.5))+
-    guides(colour = FALSE))
-
-
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text.x = element_text(angle = 45, hjust = 1),
+          axis.line = element_line(size = 1.5),  # increase axis line thickness
+          axis.title = element_text(size = 16),
+          axis.text = element_text(size = 14),
+          legend.text = element_text(size = 16),  # increase legend text size
+          legend.title = element_text(size = 18),
+          legend.background = element_rect(color = "grey", size = 0.5))+
+    # legend.position = "top")+
+    guides(colour = FALSE)
+) 
 

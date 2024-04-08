@@ -46,7 +46,7 @@ View(summary)
 summary$se<- c(1.1547, 0.6667, 0.8539)
 
 ##GGPLOT
-full_richness_bar<- ggplot(summary, aes(x = habitat, y = mean_value)) +
+(full_richness_bar<- ggplot(summary, aes(x = habitat, y = mean_value)) +
   geom_bar(stat = "identity", position= 'dodge', fill = Colours, alpha = 0.6) +
   geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2, color = "black", position = position_dodge(width = 0)) +
   geom_point(data = summary_full_richness, aes(y = mean_value), color = "red", size = 3, position = position_dodge(width = 0)) +
@@ -54,8 +54,11 @@ full_richness_bar<- ggplot(summary, aes(x = habitat, y = mean_value)) +
   labs(y = "Mean Phonic Richness", x = "Habitat Complexity Category") +
   theme_classic() +
   scale_fill_manual(values = Colours, name = "Habitat Category")+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
-
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+       axis.line = element_line(size = 1.5),  # increase axis line thickness
+      axis.title = element_text(size = 16),
+      axis.text = element_text(size = 14))  # increase axis title size) 
+)
 
 ##Stats tests for broadband richness
 lm_full_richness<- aov(log(max_richness)~habitat, data= full_max_richness)
@@ -78,11 +81,14 @@ full_diversity <- full_richness %>%
   group_by(site,habitat, revised_habitat) %>%
   summarise(diversity = mean(full_simpson)) %>%
   ungroup()
-View(full_diversity)
+print(full_diversity)
 full_diversity$habitat<- as.factor(full_diversity$habitat)
 boxplot(full_diversity$diversity~full_diversity$habitat)
 boxplot(full_diversity$diversity~full_diversity$revised_habitat)
 hist(sqrt(full_diversity$diversity))
+
+
+
 lm_div<- aov(sqrt(diversity)~habitat, data= full_diversity)
 plot(lm_div)
 
@@ -92,20 +98,78 @@ kw_full_diversity<- kruskal.test(diversity~habitat, data=full_diversity)
 kw_full_diversity
 # not significant 
 
-## low band
+low_diversity <- merged %>%
+  group_by(site,habitat) %>%
+  summarise(diversity = mean(low_simpson)) %>%
+  ungroup()
+
+str(low_diversity)
+kw_low_diversity<- kruskal.test(diversity~habitat, data=low_diversity)
+kw_low_diversity
+# very close to being significant : p= 0.077
+
+#summarize means and se
+str(merged)
+full_diversity <- merged %>%
+  group_by(site,habitat) %>%
+  summarise(diversity = mean(full_simpson)) %>%
+  ungroup()
+
+summary_full_diversity<- full_diversity%>%
+  group_by(habitat) %>%
+  summarise(mean_value = mean(diversity),
+            sd = sd(diversity),
+            se = sd/sqrt(n()) ) %>%
+  ungroup()
+print(summary_full_diversity)
+## GGPLOT
+(full_diversity_plot<- ggplot(summary_full_diversity, aes(x = habitat, y = mean_value)) +
+    geom_bar(stat = "identity", position= 'dodge', fill = Colours, alpha = 0.6) +
+    geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2, color = "black", position = position_dodge(width = 0)) +
+    geom_point(data = full_diversity, aes(y =diversity), color = "red", size = 3, position = position_dodge(width = 0)) +
+    #geom_text(aes(label = sprintf("%.2f", mean_value)), vjust = -0.5, color = "black", size = 3, position = position_dodge(width = 0.5)) +
+    labs(y = "Mean Diversity (Simpson's Diversity Index (D))", x = "Habitat Complexity Category") +
+    theme_classic() +
+    scale_fill_manual(values = Colours, name = "Habitat Category")+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          axis.line = element_line(size = 1.5),  # increase axis line thickness
+          axis.title = element_text(size = 16),
+          axis.text = element_text(size = 14))  # increase axis title size) 
+)
+
+## low diversity ----
 low_diversity <- merged %>%
   group_by(site,habitat) %>%
   summarise(diversity = mean(low_simpson)) %>%
   ungroup()
   
-View(low_diversity)
-boxplot(low_diversity$diversity~low_diversity$revised_habitat)
-
-boxplot(low_diversity$diversity~low_diversity$habitat)
+str(low_diversity)
 kw_low_diversity<- kruskal.test(diversity~habitat, data=low_diversity)
 kw_low_diversity
 # very close to being significant : p= 0.077
 
+#summarize means and se
+summary_low_diversity<- low_diversity%>%
+  group_by(habitat) %>%
+  summarise(mean_value = mean(diversity),
+            sd = sd(diversity),
+            se = sd/sqrt(n()) ) %>%
+  ungroup()
+print(summary_low_diversity)
+## GGPLOT
+(low_diversity_plot<- ggplot(summary_low_diversity, aes(x = habitat, y = mean_value)) +
+    geom_bar(stat = "identity", position= 'dodge', fill = Colours, alpha = 0.6) +
+    geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2, color = "black", position = position_dodge(width = 0)) +
+    geom_point(data = low_diversity, aes(y =diversity), color = "red", size = 3, position = position_dodge(width = 0)) +
+    #geom_text(aes(label = sprintf("%.2f", mean_value)), vjust = -0.5, color = "black", size = 3, position = position_dodge(width = 0.5)) +
+    labs(y = "Mean Diversity (Simpson's Diversity Index (D))", x = "Habitat Complexity Category") +
+    theme_classic() +
+    scale_fill_manual(values = Colours, name = "Habitat Category")+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          axis.line = element_line(size = 1.5),  # increase axis line thickness
+          axis.title = element_text(size = 16),
+          axis.text = element_text(size = 14))  # increase axis title size) 
+)
 ### Low Relative Abundance ----
 low_relative_abundance <- read_excel("data/phonic_richness.xlsx", 
                                      +     sheet = "low_relative_abundance (2)")
@@ -140,13 +204,13 @@ low_relative_abundance_means$rank <- rank(-df_transposed$ri )
 
 df$rank <- rank(-df$relative_abundance) 
 ### low freq max richness ----
-View(merged)
+str(merged)
 #subset of max richness per site for low band sounds
 low_richness <- merged %>%
   group_by(site,habitat)%>%
   summarise(max_richnes = mean(low_max_richness))%>%
   ungroup()
-View(low_richness)
+str(low_richness)
 
 #stats
 hist(log(low_richness$max_richnes))
@@ -170,7 +234,7 @@ summary_low_richness<- low_richness%>%
 summary_low_richness$se<- c(1.1547, 0.6667, 0.8539) #calculated from excel as sd/sqrt(n())
 #summary stats done
 
-ggplot(summary_low_richness, aes(x = habitat, y = mean_value)) +
+(low_richness_plot<- ggplot(summary_low_richness, aes(x = habitat, y = mean_value)) +
   geom_bar(stat = "identity", position= 'dodge', fill = Colours, alpha = 0.6) +
   geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2, color = "black", position = position_dodge(width = 0)) +
   geom_point(data = low_richness, aes(y =max_richnes), color = "red", size = 3, position = position_dodge(width = 0)) +
@@ -178,7 +242,11 @@ ggplot(summary_low_richness, aes(x = habitat, y = mean_value)) +
   labs(y = "Mean Phonic Richness", x = "Habitat Complexity Category") +
   theme_classic() +
   scale_fill_manual(values = Colours, name = "Habitat Category")+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.line = element_line(size = 1.5),  # increase axis line thickness
+  axis.title = element_text(size = 16),
+  axis.text = element_text(size = 14))  # increase axis title size) 
+)
 
 ### Low Band Richness vs Time----
 lm_lowrichness_time<- lm(low_richness ~ time+site, data=low_richness)
@@ -346,4 +414,30 @@ View(ratios)
 
 #plot the ratio over time for each habitat
 df_avg_ratios <- ratios %>%
-  group_by
+  group_by(time,habitat) %>%
+  summarise(avg_ratio = mean(invert_dominance),
+            sd_ratio = sd(invert_dominance),
+            se_ratio = sd(invert_dominance) /sqrt(n()))%>%
+  ungroup()#gives the stats for each habitat at each time point. Has taken the average richness of each habitat for each time.
+
+
+View(df_avg_ratios)
+df_avg_ratios[is.na(df_avg_ratios)] <- 0
+
+### Plot by habitat
+ggplot(df_avg_ratios, aes(x = time, y = avg_ratio, color = habitat)) +
+  geom_line() +  # Add lines
+  geom_point() +  # Add points
+  labs(x = "Time", y = "Average Richness", color = "Habitat Category") +  # Labels
+  theme_minimal()  # Optional: change theme if desired
+
+
+
+
+
+
+#----
+#----
+### Boat noise comparison ----
+str(merged)
+boat<- subset(merged, select = c(boats,full_simpson, low_max_richness, full_max_richness))
