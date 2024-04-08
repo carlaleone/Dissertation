@@ -343,6 +343,7 @@ full_abundance_nmds<- metaMDS(max_abundance_2[,-c(habitat)], #the community data
                               k=2,# Using bray-curtis distance
                               try = 300)
 full_abundance_nmds
+stressplot(full_abundance_nmds)
 
 max_abundance_2<- merge(habitats, full_abundance, by = c("site"))
 max_abundance_2$habitat<- as.factor(max_abundance_2$habitat)
@@ -523,18 +524,6 @@ low_presence_perm<- adonis2(low_presence_dist~ habitat, data = low_presence_2)
 low_presence_perm
 
 
-##nmds
-nmds_low_presence<-  metaMDS(low_presence_2[,-c(habitat)], 
-                                            distance = "bray",
-                                            binary =T, 
-                                            k = 2, 
-                                            try = 300)
-
-nmds_low_presence
-# stress = 0.077
-plot(nmds_low_presence)
-stressplot(nmds_low_presence)
-ordiplot(nmds_low_presence, type= "text")
 
 
 #simper
@@ -662,10 +651,6 @@ low_abundance<- low_abundance %>%
 str(low_abundance)
 low_abundance<- low_abundance[, 1:12] <- low_abundance[, 1:12] * 13
 
-## distances and permanva
-low_abundance_dist<- vegdist(low_abundance, method = "bray")
-low_abundance_perm<- adonis2(low_abundance_dist~ habitat, data = habitats)
-low_abundance_perm
 
 ##nmds
 nmds_low_abundance<-  metaMDS(low_abundance, #the community data
@@ -697,13 +682,6 @@ habitats <- read_excel("data/meta_richness.xlsx",
 View(habitats)
 habitats$habitat<- as.factor(habitats$habitat)
 
-# Try PERMANOVA
-dist_low_occurrence<- vegdist(low_occurrence, method="bray")
-perm_low_occurrence <- adonis2(low_abundance ~ habitat, data = habitats)
-
-summary(perm_low_occurrence)
-perm_low_occurrence
-# is significant: 0.033 = p
 
 #simper
 basic_simper_low_abundance<- simper(low_abundance_2[,-c(habitat)], #our community data set
@@ -1056,20 +1034,143 @@ summary_data <- long_data %>%
             se_abundance = sd(RelativeAbundance) / sqrt(n())) %>%
   ungroup()
 
+summary_data <- summary_data %>%
+  mutate(site = recode(site, "ardmore" = "Ardmore", 
+                       "port_dinallaen"="Port Dinllaen", 
+                       "canna" = "Canna", 
+                       "isle_of_soay"="Isle of Soay", 
+                       "kyles_of_bute"= "Kyles of Bute",
+                       "gallanach_bay"= "Gallanach Bay", 
+                       "gansey_bay"= "Gansey Bay", 
+                       "kintyre"= "Kintyre",
+                       "skye"= "Skye", 
+                       "craignish"="Loch Craignish"))
+# make site names presentable
+
+summary_data <- summary_data %>%
+  mutate(Species = recode(Species, "burp" = "Burp", 
+                       "click"="Click", 
+                       "croak" = "Croak", 
+                       "growl"="Growl", 
+                       "grunt"= "Grunt",
+                       "gulp"= "Gulp", 
+                       "hoot"= "Hoot", 
+                       "low_grunt"= "Low Grunt",
+                       "scrape"= "Scrape", 
+                       "scream"="Scream",
+                       "thump" = "Thump",
+                       "thump_series" = "Thump Series"))
+
 # Plot
 # trying proportional fill
 ## colours
-custom_palette <- c("#A6CEE3", "#1F78B4", "#B2DF8A", "#33A02C", "#FB9A99", "#E31A1C",
-                    "#FDBF6F", "#FF7F00", "#CAB2D6", "#6A3D9A", "#FFFF99", "#B15928", "#8DD3C7")
+custom_palette<- c("#7FFFD4", "#53868B", "#66CDAA", "#9BCD9B", "#66CD00", "#AB82FF", "#B452CD", "#8EE5EE", "#00BFFF", "#009ACD", "#00CDCD", "#1C86EE")
 
-(long_data_plot<- ggplot(summary_data, aes(x = site, y = mean_abundance, fill = Species)) +
+(long_data_plot<- ggplot(summary_data, aes(x = site, y = mean_abundance, fill = factor(Species, levels= c(
+  "Burp", "Click", "Croak", "Thump", "Thump Series", "Gulp", "Scrape", "Growl", "Grunt", "Hoot", "Low Grunt", "Scream")))) +
   geom_bar(stat = "identity") +
   scale_fill_manual(values = custom_palette) + 
-  labs(title = "Relative Abundance by Site",
-       x = "Site",
+  labs( x = "Site",
        y = "Relative Abundance",
-       fill = "Sound Category") +
+       fill = "Sound Type") +
   theme_classic() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  facet_wrap(~habitat, scales = "free")
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 16)) +
+  facet_wrap(~habitat, scales = "free") + 
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text.x = element_text(angle = 45, hjust = 1),
+          axis.line = element_line(size = 1.5),  # increase axis line thickness
+          axis.title = element_text(size = 16),
+          axis.text = element_text(size = 14),
+          legend.text = element_text(size = 16),  # increase legend text size
+          legend.title = element_text(size = 18),
+          legend.background = element_rect(color = "grey", size = 0.5),
+          strip.text = element_text (size= 18),
+          strip.background = element_rect(color = "black", size = 1.5) 
+          )
 )
+
+# Relative Abundances for full band 
+full_relative_abundance <- read_excel("data/phonic_richness.xlsx", 
+                                     sheet = "full_relative_abundance (2)")
+print(full_relative_abundance)
+full_relative_abundance<- subset(full_relative_abundance, select = -c(knock))
+full_relative_abundance$habitat<- as.factor(c(3,3,3,2,2,2,1,1,1,3))
+
+# Make the data in long format
+long_data <- gather(full_relative_abundance, key = "Species", value = "RelativeAbundance", -c(site, habitat))
+
+summary_data <- long_data %>%
+  group_by(Species, site, habitat) %>%
+  summarise(mean_abundance = mean(RelativeAbundance),
+            se_abundance = sd(RelativeAbundance) / sqrt(n())) %>%
+  ungroup()
+
+summary_data <- summary_data %>%
+  mutate(site = recode(site, "ardmore" = "Ardmore", 
+                       "port_dinallaen"="Port Dinllaen", 
+                       "canna" = "Canna", 
+                       "isle_of_soay"="Isle of Soay", 
+                       "kyles_of_bute"= "Kyles of Bute",
+                       "gallanach_bay"= "Gallanach Bay", 
+                       "gansey_bay"= "Gansey Bay", 
+                       "kintyre"= "Kintyre",
+                       "skye"= "Skye", 
+                       "craignish"="Loch Craignish"))
+# make site names presentable
+
+print(summary_data)
+summary_data <- summary_data %>%
+  mutate(Species = recode(Species, "burp" = "Burp", 
+                          "click"="Click", 
+                          "croak" = "Croak", 
+                          "growl"="Growl", 
+                          "grunt"= "Grunt",
+                          "gulp"= "Gulp", 
+                          "hoot"= "Hoot", 
+                          "low_grunt"= "Low Grunt",
+                          "scrape"= "Scrape", 
+                          "scream"="Scream",
+                          "thump" = "Thump",
+                          "thump_series" = "Thump Series",
+                          "rattle"= "Rattle",
+                          "pinch"= "Pinch",
+                          "snap" = "Snap",
+                          "squeak" = "Squeak")) %>%
+  mutate(Species = factor(Species,
+                          levels= c(
+                            "Burp", "Click", "Croak", "Thump", "Thump Series", "Gulp", "Scrape", "Growl", "Grunt", "Hoot", "Low Grunt", "Scream", "Pinch", "Snap", "Squeak", "Rattle"
+                          )))
+
+# Plot
+# trying proportional fill
+## colours
+custom_palette <- c("#FF6A6A", "#87CEFA", "#8EE5EE", "#ADFF2F", "#008B00", "#EE6363", "#00CD00", "#9BCD9B", "#FFAEB9", "#A2CD5A", "#009ACD", "#00B2EE", "#BA55D3", "#7B68EE", "#9400D3", "#EE00EE")
+
+
+custom_palette<- c("#7FFFD4", "#53868B", "#66CDAA", "#9BCD9B", "#66CD00", "#AB82FF", "#B452CD", "#8EE5EE", "#00BFFF", "#009ACD", "#00CDCD", "#1C86EE", "#FFB6C1", "#FF6EB4", "#EE6363", "#FF82AB")
+
+
+
+(long_data_plot<- ggplot(summary_data, aes(x = site, y = mean_abundance, fill = factor(Species, levels= c(
+  "Burp", "Click", "Croak", "Thump", "Thump Series", "Gulp", "Scrape", "Growl", "Grunt", "Hoot", "Low Grunt", "Scream", "Pinch", "Snap", "Squeak", "Rattle")))) +
+    geom_bar(stat = "identity") +
+    scale_fill_manual(values = custom_palette) + 
+    labs( x = "Site",
+          y = "Relative Abundance",
+          fill = "Sound Type") +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 16)) +
+    facet_wrap(~habitat, scales = "free") + 
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text.x = element_text(angle = 45, hjust = 1),
+          axis.line = element_line(size = 1.5),  # increase axis line thickness
+          axis.title = element_text(size = 16),
+          axis.text = element_text(size = 14),
+          legend.text = element_text(size = 16),  # increase legend text size
+          legend.title = element_text(size = 18),
+          legend.background = element_rect(color = "grey", size = 0.5),
+          strip.text = element_text (size= 18),
+          strip.background = element_rect(color = "black", size = 1.5) 
+    )
+)
+

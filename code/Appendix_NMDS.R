@@ -117,25 +117,4 @@ for(i in 1:length(unique(max_richness_2$habitat))){
     labs(fill = "Habitat Category") +
     # geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size= 2, alpha=0.5) +  # add the species labels
     geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,colour=grp),size=3) + # add the point markers
-    geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label = site),size=5,vjust=0) +  # add the site labels
-    scale_colour_manual(values=Colours) +
-    scale_fill_manual(values=Colours) +
-    # scale_x_continuous(limits = c(-1.4, 3), breaks = c(-1,0,1,2,3)) +
-    # scale_y_continuous(limits = c(-1.4, 1.2), breaks = c(-1,-0.5,0, 0.5 ,1)) +
-    scale_x_continuous(limits = c(-0.5, 0.5), breaks = c(-0.5,0,0.5)) +
-    scale_y_continuous(limits = c(-0.3, 0.5), breaks = c(-0.25,0,0.25,0.5)) +
-    #coord_equal() +
-    theme_classic() +
-    #ggtitle("Broadband Presence/Absence") +
-    theme(plot.title = element_text(hjust = 0.5),
-          axis.text.x = element_text(angle = 45, hjust = 1),
-          axis.line = element_line(size = 1.5),  # increase axis line thickness
-          axis.title = element_text(size = 16),
-          axis.text = element_text(size = 14),
-          legend.text = element_text(size = 16),  # increase legend text size
-          legend.title = element_text(size = 18),
-          legend.background = element_rect(color = "grey", size = 0.5))+
-    # legend.position = "top")+
-    guides(colour = FALSE)
-) 
-
+    geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label = site),size=5,vjust=0) 
