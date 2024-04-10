@@ -2,41 +2,7 @@
 # 18/03/2024
 # Carla Leone
 
-# Load the required library
-library(leaflet)
-library(readxl)
-install.packages("ggmap")
-library(ggmap)
-sites <- read_excel("data/meta_richness.xlsx", 
-                                                       sheet = "big_sheet (2)")
-View(sites)
-sites$habitat<- as.factor(sites$habitat)
-
-# Create a leaflet map
-map2 <- leaflet(sites) %>%
-  addTiles()  # Add default OpenStreetMap tiles
-
-habitat_colors <- c("1" = "brown", "2" = "darkblue", "3" = "darkgreen")
-
-# Define icons with colors for each habitat
-icons <- awesomeIcons(
-  icon = "ios-close",
-  iconColor = "black",
-  library = "ion",
-  markerColor = habitat_colors
-)
-# Add site markers to the map
-map2 <- map2 %>%
-  addMarkers(
-    lng = ~long,  # Longitude
-    lat = ~lat,  # Latitude
-    popup = paste("Site:", sites$site, "<br>",
-                  "Habitat:", sites$habitat, "<br>"),
-    icon = icons[sites$habitat]  # Use icons with colors based on habitat
-  )
-map2
-
-# Google MapS with Alice advice----
+# Google Maps ----
 long<- c(-6.042067,-5.557733, -4.559717, -4.726467, -5.1875, -6.225667, -6.48805, -5.94378, -5.575921, -5.601294)
 lat<- c(55.667783, 56.107717, 52.942633, 54.0774, 55.9264, 57.158333, 57.058967, 57.14924, 56.155607, 55.735104)
 habitat<- c(1,1,1,3,3,3,3,2,2,2)
@@ -56,12 +22,6 @@ sites<- get_googlemap(
 )
 
 ?ggmap
-install.packages("devtools")
-library(devtools)
-devtools::install_github('oswaldosantos/ggsn')
-install.packages("ggspatial")
-library(ggspatial)
-?ggspatial
 
 # make the map
 ?geom_point
