@@ -8,6 +8,7 @@
 - [Mapping ](https://github.com/carlaleone/Dissertation/blob/main/Appendix%20Code/Map.R)
 
 The script for splitting .wav files was adapted from Key et al and de Clippele et al  (2023). The script for acoustic index calculations was adapted from Williams et al (2022). 
+
 The following R packages were used throughout the scripts:
 - `soundecology`
 - `vegan`
