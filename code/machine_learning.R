@@ -108,14 +108,14 @@ library(caret)
 
 # training
 set.seed(222)
-ind <- sample(2, nrow(merged_avg), replace = TRUE, prob = c(0.6, 0.4))
-train <- merged_avg[ind==1,]
+ind <- sample(2, nrow(results_clean), replace = TRUE, prob = c(0.6, 0.4))
+train <- results_clean[ind==1,]
 str(train)#65 values 
-test <- merged_avg[ind==2,] # 131 values
+test <- results_clean[ind==2,] # 131 values
 
 View(train)
 
-rf_test<- randomForest(habitat~., data= merged_avg, importance= TRUE, proximity= TRUE)
+rf_test<- randomForest(habitat~., data= results_clean, importance= TRUE, proximity= TRUE)
 print(rf_test)
 plot(rf_test)
 
@@ -191,13 +191,14 @@ importance(rf_test)
 str(merged)
 classify<- subset(merged, select = c(3:24,57))
 classify$habitat<- as.factor(classify$habitat)
+classify<- subset(classify, select= -c(habitat.y))
 str(classify)
 
 # training
 set.seed(222)
-ind_class <- sample(2, nrow(classify), replace = TRUE, prob = c(0.6, 0.4))
-train_class <- classify[ind_class==1,]
-test_class <- classify[ind_class==2,] 
+ind_class <- sample(2, nrow(results_clean), replace = TRUE, prob = c(0.6, 0.4))
+train_class <- results_clean[ind_class==1,]
+test_class <- results_clean[ind_class==2,] 
 
 View(train)
 View(classify)
