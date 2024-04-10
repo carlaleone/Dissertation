@@ -324,6 +324,4 @@ confusionMatrix(p2.3, test3$ richness)
 
 
 varImpPlot(rf_3,
-           sort = T,
-           n.var = 10,
-           main = "Top 10 Variable Importance")
+           sor
