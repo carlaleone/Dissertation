@@ -7,7 +7,11 @@ library(readxl)
 library(tidyverse)
 indices <- read_excel("data/results.clean.xlsx", 
                       sheet = "matched_times")
-
+results_clean <- read_excel("data/results.clean.xlsx", 
+                            sheet = "results.clean")
+str(results_clean)
+results_clean$habitat<- as.factor(results_clean$habitat)
+results_clean <- subset (results_clean, select = c(2:23, 26))
 phonic <- read_excel("data/phonic_richness.xlsx", 
                             sheet = "big_sheet (3)")
 
@@ -65,9 +69,9 @@ View(data)
 
 str(merged)
 library(readxl)
-merged <- read_excel("data/merged.xlsx", 
+merged3 <- read_excel("data/merged.xlsx", 
                      sheet = "merged3")
-View(merged)
+View(merged3)
 #training
 set.seed(222)
 ind <- sample(2, nrow(merged_habitats), replace = TRUE, prob = c(0.7, 0.3))
@@ -665,10 +669,28 @@ biplot(pca_indices)
                    
 ### Richness vs time ----
 str(merged)
-time<- subset(merged, select=c(sunrise, time, richness, sunrise_time, site, habitat, day))
+time<- subset(merged3, select=c(sunrise, time, richness, sunrise_time, site, habitat, day, boat, weather, wind))
 View(time)
 time$habitat<- as.factor(time$habitat)
+time$wind<- as.numeric(time$wind)
 
+#wind
+wind<-  time %>%
+  group_by(site, wind, habitat, weather) %>%
+  summarize(mean = mean(richness)) %>%
+  ungroup()
+View(wind)
+plot(wind$mean~wind$wind)
+summary(lm(mean~wind, data = wind))
+
+#Weather
+weather<- time %>%
+  group_by(site, weather) %>%
+  summarize(mean = mean(richness)) %>%
+  ungroup()
+View(weather)
+boxplot(weather$mean~weather$weather)
+kruskal.test(mean~weather, data = weather)
 #linear plot
 ggplot(time, aes(x = time, y = richness, color = site)) +
 geom_smooth(se=F) +
@@ -679,6 +701,15 @@ geom_smooth(se=F) +
 
 sunrise_data <- subset(time, sunrise == "yes")
 View(sunrise_data)
+only_dawn<- sunrise_data%>%
+  group_by(site, habitat) %>%
+  summarise(mean = mean(richness),
+            sd = sd(richness))%>%
+  ungroup()
+View(only_dawn)
+boxplot(only_dawn$mean~only_dawn$habitat)
+kw_onlydawn<- kruskal.test(mean~habitat, data= only_dawn)
+kw_onlydawn
 
 ggplot() +
   geom_smooth(data = time, aes(x = time, y = richness, color = site), se = FALSE) +

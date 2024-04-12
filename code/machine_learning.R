@@ -6,6 +6,8 @@
 #load packages
 library(randomForest)
 library(caret)
+library(tidyverse)
+library(readxl)
 
 indices <- read_excel("data/results.clean.xlsx", 
                       sheet = "matched_times")
@@ -223,14 +225,50 @@ varImpPlot(rf_test_class,
            main = "Top 10 Variable Importance")
 ?varImpPlot
 
-partialPlot(rf_test_class, classify, M_high)
+install.packages("pdp")
+library(pdp)
+pdp_plot<- partial(rf_test_class, pred.var= "SE_high")
+pdp_data <- as.data.frame(pdp_plot)
+(sehigh<- ggplot(pdp_data, aes(x = SE_high, y = yhat)) +
+  geom_line(color = "green") +
+  labs(x = "SE High", y = "Partial Dependence") +
+  #ggtitle("Partial Dependence Plot for X1") +
+  theme_classic() +
+    theme( axis.text = element_text(size = 12),
+           axis.title = element_text(size = 18),
+           axis.line = element_line(size = 1.5))
+)
+library(gridExtra)
+grid.arrange(sehigh, ndsi, mhigh, hhigh, ncol = 2)
 
+# Create a data frame from the PDP results
+pdp_data <- as.data.frame(pdp_plot)
+
+# Plot the line graph using ggplot2
+ggplot(pdp_data, aes(x = M_high, y = yhat)) +
+  geom_line(color = "blue") +
+  #geom_ribbon(aes(ymin = yhat_lower, ymax = yhat_upper), fill = "lightblue", alpha = 0.3) +
+  labs(x = "X1", y = "Partial Dependence") +
+  ggtitle("Partial Dependence Plot for X1") +
+  theme_classic()
+
+##----
+#----
+#Scaled rf ----
+scaled_data<- scale(results_clean[,-c(23)])
+str(scaled_data)
+
+
+#----
+#----
 
 ## RF ON Habitat 1 ----
 str(merged)
-merged_habitats<- subset(merged, select = c(1, 4:24,51,57))
-View(merged_habitats)
+merged_habitats<- subset(merged, select = c(1, 3:24,26, 52))
+str(merged_habitats)
 merged_habitats$richness<- as.factor(merged_habitats$richness)
+merged_habitats$habitat<- as.factor(merged_habitats$habitat.x)
+merged_habitats<- subset(merged_habitats, select = -c(habitat.x))
 ## Split data into habitats
 # Data frame for habitat category 1
 df_habitat_1 <- merged_habitats %>%
@@ -324,4 +362,6 @@ confusionMatrix(p2.3, test3$ richness)
 
 
 varImpPlot(rf_3,
-           sor
+           sort = T,
+           n.var = 10,
+           main = "Top 10 Variable Importance")
