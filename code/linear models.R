@@ -123,6 +123,8 @@ matrix_hab1_numeric <- as.numeric(matrix_hab1)
 matrix_hab1 <- matrix_hab1[-1, ]
 colnames(matrix_hab1) <- column_names
 
+RStudio.Version()
+
 ### Try forest with low richness ----
 str(merged)
 merged_habitats<- subset(merged, select = c(1, 4:24,51,57))

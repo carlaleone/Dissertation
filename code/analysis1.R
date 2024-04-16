@@ -1164,8 +1164,8 @@ summary_data <- summary_data %>%
 ## colours
 custom_palette<- c("#7FFFD4", "#53868B", "#66CDAA", "#9BCD9B", "#66CD00", "#AB82FF", "#B452CD", "#8EE5EE", "#00BFFF", "#009ACD", "#00CDCD", "#1C86EE")
 
-(long_data_plot<- ggplot(summary_data, aes(x = site, y = mean_abundance, fill = factor(Species, levels= c(
-  "Burp", "Click", "Croak", "Thump", "Thump Series", "Gulp", "Scrape", "Growl", "Grunt", "Hoot", "Low Grunt", "Scream")))) +
+(long_data_plot<- ggplot(summary_data, aes(x = site, y = mean_abundance, fill = Species))+ #(Species, levels= c(
+  #"Burp", "Click", "Croak", "Thump", "Thump Series", "Gulp", "Scrape", "Growl", "Grunt", "Hoot", "Low Grunt", "Scream")))) +
   geom_bar(stat = "identity") +
   scale_fill_manual(values = custom_palette) + 
   labs( x = "Site",

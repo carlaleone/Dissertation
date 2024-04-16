@@ -272,8 +272,8 @@ merged_habitats<- subset(merged_habitats, select = -c(habitat.x))
 ## Split data into habitats
 # Data frame for habitat category 1
 df_habitat_1 <- merged_habitats %>%
-  filter(habitat == 1)%>%
-  select(-c(habitat, site))
+  filter(habitat.x == 1)%>%
+  select(-c(habitat.x, site))
 df_habitat_1$richness<- as.factor(df_habitat_1$richness)
 levels(df_habitat_1$richness)
 df_habitat_1$richness <- droplevels(df_habitat_1$richness)
@@ -288,15 +288,22 @@ test1 <- df_habitat_1[ind1==2,]
 
 rf_1<- randomForest(richness~., data= train1, importance= TRUE, proximity= TRUE)
 print(rf_1)
-
+coef(rf_1)
+summary(rf_1)
 
 p1 <- predict(rf_test_class, train_class)
 confusionMatrix(p1, train_class$ richness)
 p1
 
 p2 <- predict(rf_1, test1)
+p2
+rf_1$mse
+importance(rf_1)
 confusionMatrix(p2, test1$ richness)
-
+prediction = rf.predict(x_test)
+mse <- mean_squared_error(test1, p2)
+mse <- mean((test1$richness - p2)^2)
+mse
 
 varImpPlot(rf_1,
            sort = T,
@@ -307,8 +314,8 @@ varImpPlot(rf_1,
 partialPlot(rf_test_class, classify, M_high)
 ## RF ON Habitat 2 ----
 df_habitat_2 <- merged_habitats %>%
-  filter(habitat == 2) %>%
-  select(-c(habitat, site))
+  filter(habitat.x == 2) %>%
+  select(-c(habitat.x, site))
 df_habitat_2$richness<- as.factor(df_habitat_2$richness)
 View(df_habitat_2)
 # training
@@ -327,18 +334,19 @@ print(rf2)
 
 p1.2 <- predict(rf2, train2)
 confusionMatrix(p1.2, train2$ richness)
-
+importance(rf2)
 p2.2<- predict(rf2, test2)
 confusionMatrix(p2.2, test2$ richness)
-
+mse <- mean((test2$richness - p2.2)^2)
+mse
 varImpPlot(rf2,
                sort = T,
              n.var = 10,
               main = "Top 10 Variable Importance")
 ## RF ON Habitat 3 ----
 df_habitat_3 <- merged_habitats %>%
-  filter(habitat == 3)%>%
-  select(-c(habitat, site))
+  filter(habitat.x == 3)%>%
+  select(-c(habitat.x, site))
 df_habitat_1$richness<- as.factor(df_habitat_1$richness)
 
 
@@ -357,10 +365,11 @@ p1.3 <- predict(rf_3, train3)
 confusionMatrix(p.31, train3$ richness)
 p1.3
 
-p2.3 <- predict(rf3, test3)
+p2.3 <- predict(rf_3, test3)
 confusionMatrix(p2.3, test3$ richness)
 
-
+mse <- mean((test3$richness - p2.3)^2)
+mse
 varImpPlot(rf_3,
            sort = T,
            n.var = 10,
