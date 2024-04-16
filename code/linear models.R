@@ -744,4 +744,14 @@ summarized_df$sunrises<- posix_time
 str(summarized_df)
 posix_time <- as.POSIXct(sunrise_time, format = "%Y-%m-%d %H:%M:%S")
 summarized_df$richness_time<- c(6,4,6,5,5,6,5,6,6,5)
-summarized_df<- subset(summarized_
+summarized_df<- subset(summarized_df, select = c(sunrises, richness_time))
+#day night and dawn
+danw_data<- time%>%
+  group_by(site, day) %>%
+  summarise(mean = mean(richness),
+            sd = sd(richness))%>%
+  ungroup()
+View(danw_data)
+boxplot(danw_data$mean~danw_data$day)
+
+kruskal.test(mean~day, data=danw_data)
