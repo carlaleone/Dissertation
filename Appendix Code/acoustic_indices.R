@@ -2,7 +2,6 @@
 # Code from Ben Williams, modified by Carla Leone
 # 28/12/2023
 
-## Install and download packages ----
 install.packages("seewave")
 install.packages("soundecology")
 install.packages("tuneR")
@@ -14,28 +13,32 @@ library(tuneR)
 install.packages("tidyverse")
 library(tidyverse)
 
-## Put all your .wav files you wish to analyse into one folder and prepare another folder for the results ----
+#put all your .wav files you wish to analyse into one folder and prepare another folder for the results
+
+
+######################SPECIFY PARAMETERS HERE###########################
+
 #new working directory
 #"C:\Users\frleo\OneDrive - University of Edinburgh\Index\Recordings"
 
-folder_with_recordings = "C:/Users/frleo/OneDrive - University of Edinburgh/Dissertation/Index/20220626_061255/Split"
-#folder where data is stored. Rememer to use forward slashes for file path.
+folder_with_recordings = "C:/Users/frleo/OneDrive - University of Edinburgh/Dissertation/Index/March/Split"
+#folder where data is stored. Use forward slashes.
 
-folder_for_results = "C:/Users/frleo/OneDrive - University of Edinburgh/Dissertation/Index/20220626_061255/Split/Results" #output folder
+folder_for_results = "C:/Users/frleo/OneDrive - University of Edinburgh/Dissertation/Index/March/Split/Results" #output folder
 dir.create(folder_for_results, showWarnings = TRUE)
-outputfile_name = "results_jan6" #name to give your output file (the time and date will also be added)
-sample_rate = 18000 #all sound measured in phonic richness was at or under 18 kHz, as anything above this was likely masked by self noise of the Hydromoth.
+outputfile_name = "results_march2" #name to give your output file (the time and date will also be added)
+sample_rate = 40000 #what sample rate were the recordings?
 
-#Set the frequency bands you wish to work with. Splitting into three groups: low, high, full
+#Set the two frequency bands you wish to work with
 #additional bands can be added here and in the loop below if desired
-lowband1 = 50   # Based on observation, lowest fish sounds recorded
-lowband2 = 1000   # Based on observation and literature for fish sounds
+lowband1 = 50   #change accordingly
+lowband2 = 1050   #change accordingly
 
-highband1 = 1000   
-highband2 = 18000   
+highband1 = 1050   #change accordingly
+highband2 = 20000   #change 
 
-fullband1 = 50   
-fullband2 = 18000   
+fullband1 = 50   #change accordingly
+fullband2 = 20000   #change accordingly
 
 
 #do not change these two lines
@@ -97,7 +100,7 @@ counter = 0
 finish = length(wav_files)
 started = format(Sys.time(), "%H.%M")
 
-#Main loop to bandpass filter tracks and calculate indices ---- 
+#Main loop to bandpass filter tracks and calculate indices
 #This may error if iterating over several hundred files. Use:'for( i in 1:200){', then: 'for( i in 200:400){' and so on to split into smaller chunks
 for( i in 1:finish){
   filenames = c(filenames,(wav_files[i])) #add the file name to empty list
@@ -219,6 +222,10 @@ for( i in 1:finish){
   
 }
 
+#create vector with correct number of wav files
+wav_files_1<- wav_files[1:150]
+wav_files_2<- wav_files[151:306]
+
 #collate and save results to csv in the results folder
 results_table = data.frame( wav_files, ACI_low, ACI_high, ACI_full, AEI_low, AEI_high, AEI_full, BI_low, BI_high, BI_full, H_low, H_high, 
                            H_full, TE_low, TE_high, TE_full, SE_low, SE_high, SE_full, M_low, M_high, M_full, NDSI)
@@ -232,12 +239,17 @@ write.csv(results_table, csvname)
 #You can retrieve the name of the nth file using: print(wav_files[n]) then navigate to this in your folder
 
 
-#troubleshooting, sometimes the column length for .wav files and number of indices calculated does not match. Needed to re-run the code.
+#troubleshooting
 length(wav_files)
+#when running the above code in chunks, need to make new wav_file objects specifying those that were used in the analysis
+#wav_files_3<- wav_files[301:403]
 sum(is.na(wav_files))
 
 wav.files.data = data.frame(wav_files)
 wav.files.data$wav_files <- sub("\\.WAV$", "", wav.files.data$wav_files)
 
 View(wav.files.data)
+write.csv(wav.files.data, file = "C:/Users/frleo/OneDrive - University of Edinburgh/Dissertation/Index/Split_all/Results_jan3", ifelse(append, "a", "w"))
+
+
 write.csv(wav.files.data, file = "C:/Users/frleo/OneDrive - University of Edinburgh/Dissertation/Index/Split_all/Results_jan3", ifelse(append, "a", "w"))
